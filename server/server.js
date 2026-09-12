@@ -1,9 +1,7 @@
 import express from "express";
-import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cors from "cors";
 import session from "express-session";
-import connectMongoDBSession from "connect-mongodb-session";
 import cookieParser from "cookie-parser";
 import multer from "multer";
 import helmet from "helmet";
@@ -11,6 +9,7 @@ import morgan from "morgan";
 import path from "path";
 import { fileURLToPath } from "url";
 import { isSupabaseConfigured } from "./config/supabase.js";
+import { SupabaseSessionStore } from "./services/supabaseSessionStore.js";
 
 import commerceRoutes from "./routes/commerceRoutes.js";
 import productRoutes from "./routes/productsRoutes.js";
@@ -46,184 +45,38 @@ const {
   NODE_ENV = "development",
 } = process.env;
 
-const getMongoConfig = () => {
-  const mongoUri = process.env.MONGO_URI?.trim();
-  const mongoUrl = process.env.MONGO_URL?.trim();
-
-  if (mongoUri) return { source: "MONGO_URI", uri: mongoUri };
-  if (mongoUrl) return { source: "MONGO_URL", uri: mongoUrl };
-  return { source: null, uri: "" };
-};
-
-const mongoConfig = getMongoConfig();
-const MONGO_CONNECTION_STRING = mongoConfig.uri;
-const MONGO_SERVER_SELECTION_TIMEOUT_MS = 5000;
-const MONGO_CONNECT_TIMEOUT_MS = 10000;
-const MONGO_CONNECT_OPTIONS = {
-  serverSelectionTimeoutMS: MONGO_SERVER_SELECTION_TIMEOUT_MS,
-  connectTimeoutMS: MONGO_CONNECT_TIMEOUT_MS,
-};
-
 const isProduction = NODE_ENV === "production";
 const app = express();
 const upload = multer({ dest: path.join(__dirname, "uploads") });
-const MongoDBStore = connectMongoDBSession(session);
+
+// CORS_ORIGIN / FRONTEND_URL may each be a single origin or a comma-separated
+// list (e.g. a Vercel production domain plus preview-deployment domains).
+const splitOrigins = (value) => (value || "").split(",").map((o) => o.trim()).filter(Boolean);
 
 const allowedOrigins = [
-  CORS_ORIGIN,
-  FRONTEND_URL,
+  ...splitOrigins(CORS_ORIGIN),
+  ...splitOrigins(FRONTEND_URL),
   "http://localhost:3000",
   "http://localhost:3001",
+  "https://tuah-cool.vercel.app",
 ].filter(Boolean);
-
-const redactMongoUri = (uri) => {
-  if (!uri) return "(not set)";
-
-  try {
-    const parsed = new URL(uri);
-    const credentials =
-      parsed.username || parsed.password ? "<credentials>@" : "";
-    return `${parsed.protocol}//${credentials}${parsed.host}${parsed.pathname}`;
-  } catch {
-    const scheme = uri.match(/^mongodb(?:\+srv)?:\/\//i)?.[0] || "mongodb://";
-    const withoutScheme = uri.replace(/^mongodb(?:\+srv)?:\/\//i, "");
-    const withoutAuth = withoutScheme.replace(/^[^@/]+@/, "<credentials>@");
-    return `${scheme}${withoutAuth.split(/[?#]/)[0]}`;
-  }
-};
-
-const isSrvMongoUri = MONGO_CONNECTION_STRING.startsWith("mongodb+srv://");
-
-const formatMongoError = (error) => {
-  const rawMessage = error?.reason?.message || error?.message || String(error);
-  const safeMessage = MONGO_CONNECTION_STRING
-    ? rawMessage
-        .split(MONGO_CONNECTION_STRING)
-        .join(redactMongoUri(MONGO_CONNECTION_STRING))
-    : rawMessage;
-
-  if (
-    isSrvMongoUri &&
-    /querySrv|queryTxt|SRV|TXT|ENOTFOUND|ENODATA|ECONNREFUSED|ETIMEOUT/i.test(
-      safeMessage,
-    )
-  ) {
-    return `${safeMessage}. Atlas mongodb+srv connection strings require DNS SRV/TXT resolution. If this network blocks SRV lookups, use the MongoDB Atlas standard non-SRV mongodb:// connection string.`;
-  }
-
-  return safeMessage;
-};
-
-const logMongoConfig = () => {
-  if (process.env.MONGO_URI?.trim() && process.env.MONGO_URL?.trim()) {
-    console.info(
-      "MongoDB config: MONGO_URI and MONGO_URL are both set; using MONGO_URI.",
-    );
-  }
-
-  if (!MONGO_CONNECTION_STRING) {
-    console.warn(
-      "MongoDB config: no connection string found. Checked MONGO_URI first, then MONGO_URL.",
-    );
-    return;
-  }
-
-  console.info(
-    `MongoDB config: using ${mongoConfig.source} (${redactMongoUri(
-      MONGO_CONNECTION_STRING,
-    )}).`,
-  );
-
-  // mongodb+srv Atlas URIs require DNS SRV/TXT resolution for _mongodb._tcp.<cluster-host>.
-  if (isSrvMongoUri) {
-    console.info(
-      "MongoDB config: mongodb+srv detected; this environment must allow DNS SRV/TXT lookups.",
-    );
-  }
-};
 
 const databaseUnavailablePayload = () => ({
   success: false,
-  message:
-    "MongoDB is unavailable. Database-backed endpoints are temporarily disabled.",
+  message: "Database is unavailable. Database-backed endpoints are temporarily disabled.",
 });
 
-const requireMongoConnection = (req, res, next) => {
-  if (mongoose.connection.readyState === 1) return next();
+// Every route in this app is now backed by Supabase Postgres. Checked lazily
+// per-request (not cached at boot) so it reflects config added after startup
+// without a restart.
+const requireSupabaseConnection = (req, res, next) => {
+  if (isSupabaseConfigured()) return next();
   return res.status(503).json(databaseUnavailablePayload());
 };
 
-// Gate for routes whose data has moved to Supabase Postgres (products,
-// wishlist — see the Mongo->Supabase migration). Checked lazily per-request
-// so it reflects config added after boot without a restart.
-const requireSupabaseConnection = (req, res, next) => {
-  if (isSupabaseConfigured()) return next();
-  return res.status(503).json({
-    success: false,
-    message: "Supabase is unavailable. Database-backed endpoints are temporarily disabled.",
-  });
-};
-
-const isMongoUnavailableError = (error = {}) => {
-  const message = error.message || "";
-  return (
-    [
-      "MongoNetworkError",
-      "MongoServerSelectionError",
-      "MongoTopologyClosedError",
-    ].includes(error.name) ||
-    /bufferCommands|not connected|server selection|topology|connection/i.test(
-      message,
-    )
-  );
-};
-
-const createSessionStore = () => {
-  if (!MONGO_CONNECTION_STRING) return null;
-
-  try {
-    const store = new MongoDBStore(
-      {
-        uri: MONGO_CONNECTION_STRING,
-        collection: "sessions",
-        connectionOptions: MONGO_CONNECT_OPTIONS,
-      },
-      (error) => {
-        if (error) {
-          console.warn(
-            `MongoDB session store unavailable: ${formatMongoError(error)}`,
-          );
-          return;
-        }
-
-        console.info("MongoDB session store connected.");
-      },
-    );
-
-    store.on("error", (error) => {
-      const message = `MongoDB session store warning: ${formatMongoError(error)}`;
-      if (isProduction) console.error(message);
-      else console.warn(message);
-    });
-
-    return store;
-  } catch (error) {
-    console.warn(
-      `MongoDB session store setup failed: ${formatMongoError(error)}`,
-    );
-    if (!isProduction) {
-      console.warn(
-        "Development server will continue with the in-memory session store.",
-      );
-    }
-    return null;
-  }
-};
-
-const configureApp = ({ mongoConnected, sessionStore }) => {
-  app.locals.mongoAvailable = mongoConnected;
-  app.locals.mongoMode = mongoConnected ? "mongo" : "demo";
-  app.locals.mongoUriSource = mongoConfig.source;
+const configureApp = () => {
+  app.locals.dbAvailable = isSupabaseConfigured();
+  app.locals.dbMode = isSupabaseConfigured() ? "supabase" : "demo";
 
   app.use(helmet({ crossOriginResourcePolicy: false }));
   app.use(morgan(isProduction ? "tiny" : "dev"));
@@ -248,7 +101,7 @@ const configureApp = ({ mongoConnected, sessionStore }) => {
       secret: SESSION_SECRET,
       resave: false,
       saveUninitialized: false,
-      store: sessionStore || undefined,
+      store: isSupabaseConfigured() ? new SupabaseSessionStore() : undefined,
       cookie: {
         httpOnly: true,
         secure: isProduction,
@@ -270,7 +123,7 @@ const configureApp = ({ mongoConnected, sessionStore }) => {
   app.use("/api/admin/attendance",requireSupabaseConnection, attendanceRoutes);
   app.use("/api/leave",           requireSupabaseConnection, leaveRoutes);
   app.use("/api/admin/leave",     requireSupabaseConnection, leaveRoutes);
-  // ── Import / Export (employees/attendance/leave sheets — all Postgres now) ─
+  // ── Import / Export (employees/attendance/leave sheets) ────────────────────
   app.use("/api/admin/export",  requireSupabaseConnection, importExportRoutes);
   app.use("/api/admin/import",  requireSupabaseConnection, importExportRoutes);
 
@@ -278,8 +131,8 @@ const configureApp = ({ mongoConnected, sessionStore }) => {
   app.use("/api/admin/products",  requireSupabaseConnection, adminProductRoutes);
   app.use("/api/admin/employees", requireSupabaseConnection, adminEmployeeRoutes);
   app.use("/api/admin/orders",    requireSupabaseConnection, adminOrderRoutes);
-  app.use("/api/admin/dashboard", requireMongoConnection, analyticsRoutes);
-  app.use("/api/admin/analytics", requireMongoConnection, analyticsRoutes);
+  app.use("/api/admin/dashboard", requireSupabaseConnection, analyticsRoutes);
+  app.use("/api/admin/analytics", requireSupabaseConnection, analyticsRoutes);
   app.use("/api/admin/emails",    requireSupabaseConnection, emailAdminRoutes);
   app.use("/api/admin/erp",       requireSupabaseConnection, erpRoutes);
   app.use("/api/admin",           requireSupabaseConnection, adminLeadRoutes);
@@ -287,23 +140,23 @@ const configureApp = ({ mongoConnected, sessionStore }) => {
   app.use("/api/orders",          requireSupabaseConnection, orderRoutes);
   app.use("/api/cart",            requireSupabaseConnection, cartRoutes);
   app.use("/api/wishlist",        requireSupabaseConnection, wishlistRoutes);
-  app.use("/api/customer",        requireMongoConnection, customerRoutes);
+  app.use("/api/customer",        requireSupabaseConnection, customerRoutes);
   app.use("/api/support",         requireSupabaseConnection, supportRoutes);
   app.use("/api/products",        requireSupabaseConnection, productRoutes);
   app.use("/api/users",           userRoutes);
   app.use("/api/erp",             requireSupabaseConnection, erpRoutes);
   app.use("/api/settings",        settingsRoutes);
   // Hybrid storage routes (Supabase Storage + email outbox)
-  app.use("/api", requireMongoConnection, uploadRoutes);
+  app.use("/api", requireSupabaseConnection, uploadRoutes);
   // commerceRoutes last under /api — provides demo fallback for /collections, /cart, /checkout
   app.use("/api", commerceRoutes);
 
   app.get("/", (req, res) => {
     res.json({
-      message: `Tuah API is running in ${app.locals.mongoMode} mode`,
-      mongo: {
-        available: app.locals.mongoAvailable,
-        source: app.locals.mongoUriSource,
+      message: `Tuah API is running in ${app.locals.dbMode} mode`,
+      database: {
+        available: app.locals.dbAvailable,
+        provider: "supabase",
       },
     });
   });
@@ -317,10 +170,6 @@ const configureApp = ({ mongoConnected, sessionStore }) => {
 
   app.use((err, req, res, next) => {
     console.error("Error:", err.message);
-    if (isMongoUnavailableError(err)) {
-      return res.status(503).json(databaseUnavailablePayload());
-    }
-
     return res
       .status(500)
       .json({ message: "Internal Server Error", error: err.message });
@@ -333,71 +182,17 @@ const startServer = () => {
   });
 };
 
-const connectDB = async () => {
-  logMongoConfig();
-
-  if (!MONGO_CONNECTION_STRING) {
-    console.warn(
-      "Running Tuah API with in-memory demo data. Database-backed auth routes will return HTTP 503.",
-    );
-    return false;
-  }
-
-  try {
-    await mongoose.connect(MONGO_CONNECTION_STRING, MONGO_CONNECT_OPTIONS);
-    console.log(`Connected to MongoDB Atlas using ${mongoConfig.source}.`);
-    return true;
-  } catch (error) {
-    console.error(
-      `Failed to connect to MongoDB Atlas using ${mongoConfig.source}: ${formatMongoError(
-        error,
-      )}`,
-    );
-    console.warn(
-      "Continuing in demo/fallback mode. Database-backed auth routes will return HTTP 503.",
-    );
-    return false;
-  }
-};
-
-mongoose.connection.on("connected", () => {
-  app.locals.mongoAvailable = true;
-  app.locals.mongoMode = "mongo";
-});
-
-mongoose.connection.on("disconnected", () => {
-  app.locals.mongoAvailable = false;
-  app.locals.mongoMode = "demo";
-  if (MONGO_CONNECTION_STRING) {
-    console.warn(
-      "MongoDB disconnected. Database-backed endpoints will return HTTP 503 until MongoDB reconnects.",
-    );
-  }
-});
-
 const bootstrap = () => {
-  // Start accepting HTTP requests immediately; database-backed routes return
-  // a clear 503 until MongoDB is connected instead of making the whole service
-  // look hung during cold starts or DNS/session-store delays.
-  const sessionStore = createSessionStore();
-  configureApp({
-    mongoConnected: mongoose.connection.readyState === 1,
-    sessionStore,
-  });
-  startServer();
+  if (isSupabaseConfigured()) {
+    console.log("Connected to Supabase Postgres.");
+  } else {
+    console.warn(
+      "SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set. Running Tuah API with in-memory demo data. Database-backed routes will return HTTP 503.",
+    );
+  }
 
-  connectDB()
-    .then((mongoConnected) => {
-      app.locals.mongoAvailable = mongoConnected;
-      app.locals.mongoMode = mongoConnected ? "mongo" : "demo";
-    })
-    .catch((error) => {
-      app.locals.mongoAvailable = false;
-      app.locals.mongoMode = "demo";
-      console.error(
-        `MongoDB startup check failed: ${formatMongoError(error)}`,
-      );
-    });
+  configureApp();
+  startServer();
 };
 
 bootstrap();

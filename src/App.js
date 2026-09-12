@@ -40,6 +40,7 @@ import AdminERPWorkflows from "./Pages/AdminERPWorkflows";
 import AdminERPApprovals from "./Pages/AdminERPApprovals";
 import AdminAttendance from "./Pages/AdminAttendance";
 import AdminLeave from "./Pages/AdminLeave";
+import ComingSoonPage from "./Pages/ComingSoonPage";
 
 // Employee self-service pages
 import EmployeeDashboard from "./Pages/EmployeeDashboard";
@@ -285,6 +286,9 @@ const App = () => {
         <Route path="/admin/erp/workflow"   element={staffStandalonePage(<AdminERPWorkflows />)} />
         <Route path="/admin/erp/workflows"  element={<Navigate to="/admin/erp/workflow" replace />} />
         <Route path="/admin/erp/approvals"  element={staffStandalonePage(<AdminERPApprovals />)} />
+
+        {/* ── ERP roadmap placeholder (Inventory, Purchasing, Manufacturing, etc.) ── */}
+        <Route path="/admin/coming-soon" element={staffStandalonePage(<ComingSoonPage />)} />
 
         {/* ── Employee Self-Service Portal ── */}
         <Route path="/employee" element={<Navigate to="/employee/dashboard" replace />} />

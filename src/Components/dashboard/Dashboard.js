@@ -3,17 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { commerceApi } from "../../services/api";
 import { useAuthContext } from "../../context/AuthContext";
 import { can } from "../../utils/permissions";
+import StatusBadge from "../ui/StatusBadge";
 import "../../Styles/admin-dashboard.css";
 
 const initials = (name = "") =>
   (name || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
 const money = (v) => `$${Number(v || 0).toLocaleString()}`;
-
-const STATUS_CLASS = {
-  new: "badge-amber", confirmed: "badge-info", in_production: "badge-amber",
-  ready: "badge-info", delivered: "badge-success", cancelled: "badge-muted",
-};
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -207,9 +203,7 @@ const Dashboard = () => {
                           </td>
                           <td style={{ fontWeight: 500 }}>{money(o.total)}</td>
                           <td>
-                            <span className={`badge-status ${STATUS_CLASS[o.status] || "badge-amber"}`}>
-                              {String(o.status || "new").replace(/_/g, " ")}
-                            </span>
+                            <StatusBadge status={o.status || "new"} />
                           </td>
                         </tr>
                       ))}

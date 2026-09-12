@@ -15,10 +15,17 @@
  *                   DELETE /api/customer/wishlist/:productId
  */
 import express from "express";
-import mongoose from "mongoose";
 import { isAuthenticated } from "../middleware/AuthMiddleware.js";
-import Address from "../model/Address.js";
-import PaymentMethod from "../model/PaymentMethod.js";
+import {
+  listAddresses,
+  createAddress,
+  clearDefaultAddresses,
+  updateAddressForUser,
+  deleteAddressForUser,
+  listActivePaymentMethods,
+  clearDefaultPaymentMethods,
+  updatePaymentMethodForUser,
+} from "../models-pg/customer.js";
 import {
   findProductById,
   listWishlist as listWishlistRows,
@@ -29,16 +36,16 @@ import {
 
 const router = express.Router();
 const asyncRoute = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
-const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const isValidProductId = (id) => typeof id === "string" && UUID_RE.test(id);
+const isValidId = (id) => typeof id === "string" && UUID_RE.test(id);
+const isValidProductId = isValidId;
 
 router.use(isAuthenticated);
 
 // ─── Addresses ────────────────────────────────────────────────────────────────
 
 router.get("/addresses", asyncRoute(async (req, res) => {
-  const addresses = await Address.find({ userId: req.user.id }).sort({ isDefaultShipping: -1, createdAt: 1 });
+  const addresses = await listAddresses(req.user.id);
   return res.json({ success: true, addresses });
 }));
 
@@ -49,30 +56,36 @@ router.post("/addresses", asyncRoute(async (req, res) => {
   }
 
   // Clear previous default if this one is default
-  if (isDefaultShipping) await Address.updateMany({ userId: req.user.id }, { isDefaultShipping: false });
-  if (isDefaultBilling) await Address.updateMany({ userId: req.user.id }, { isDefaultBilling: false });
+  if (isDefaultShipping) await clearDefaultAddresses(req.user.id, "is_default_shipping");
+  if (isDefaultBilling) await clearDefaultAddresses(req.user.id, "is_default_billing");
 
-  const address = await Address.create({
-    userId: req.user.id, label, fullName, phone, line1, line2, city, state, country, postalCode,
-    isDefaultShipping: !!isDefaultShipping, isDefaultBilling: !!isDefaultBilling,
+  const address = await createAddress({
+    user_id: req.user.id, label, full_name: fullName, phone, line1, line2, city, state, country,
+    postal_code: postalCode, is_default_shipping: !!isDefaultShipping, is_default_billing: !!isDefaultBilling,
   });
   return res.status(201).json({ success: true, address });
 }));
 
+const ADDRESS_FIELD_MAP = {
+  label: "label", fullName: "full_name", phone: "phone", line1: "line1", line2: "line2",
+  city: "city", state: "state", country: "country", postalCode: "postal_code",
+  isDefaultShipping: "is_default_shipping", isDefaultBilling: "is_default_billing",
+};
+
 router.patch("/addresses/:id", asyncRoute(async (req, res) => {
   if (!isValidId(req.params.id)) return res.status(400).json({ success: false, message: "Invalid address id." });
-  const address = await Address.findOneAndUpdate(
-    { _id: req.params.id, userId: req.user.id },
-    req.body,
-    { new: true, runValidators: true }
-  );
+  const updates = {};
+  Object.entries(ADDRESS_FIELD_MAP).forEach(([bodyKey, column]) => {
+    if (req.body[bodyKey] !== undefined) updates[column] = req.body[bodyKey];
+  });
+  const address = await updateAddressForUser(req.params.id, req.user.id, updates);
   if (!address) return res.status(404).json({ success: false, message: "Address not found." });
   return res.json({ success: true, address });
 }));
 
 router.delete("/addresses/:id", asyncRoute(async (req, res) => {
   if (!isValidId(req.params.id)) return res.status(400).json({ success: false, message: "Invalid address id." });
-  const address = await Address.findOneAndDelete({ _id: req.params.id, userId: req.user.id });
+  const address = await deleteAddressForUser(req.params.id, req.user.id);
   if (!address) return res.status(404).json({ success: false, message: "Address not found." });
   return res.json({ success: true, message: "Address deleted." });
 }));
@@ -80,13 +93,9 @@ router.delete("/addresses/:id", asyncRoute(async (req, res) => {
 router.patch("/addresses/:id/default", asyncRoute(async (req, res) => {
   if (!isValidId(req.params.id)) return res.status(400).json({ success: false, message: "Invalid address id." });
   const { type = "shipping" } = req.body;
-  const field = type === "billing" ? "isDefaultBilling" : "isDefaultShipping";
-  await Address.updateMany({ userId: req.user.id }, { [field]: false });
-  const address = await Address.findOneAndUpdate(
-    { _id: req.params.id, userId: req.user.id },
-    { [field]: true },
-    { new: true }
-  );
+  const field = type === "billing" ? "is_default_billing" : "is_default_shipping";
+  await clearDefaultAddresses(req.user.id, field);
+  const address = await updateAddressForUser(req.params.id, req.user.id, { [field]: true });
   if (!address) return res.status(404).json({ success: false, message: "Address not found." });
   return res.json({ success: true, address });
 }));
@@ -94,30 +103,21 @@ router.patch("/addresses/:id/default", asyncRoute(async (req, res) => {
 // ─── Payment Methods (metadata only — no raw card data) ───────────────────────
 
 router.get("/payment-methods", asyncRoute(async (req, res) => {
-  const methods = await PaymentMethod.find({ userId: req.user.id, status: "active" })
-    .sort({ isDefault: -1, createdAt: 1 });
+  const methods = await listActivePaymentMethods(req.user.id);
   return res.json({ success: true, paymentMethods: methods });
 }));
 
 router.delete("/payment-methods/:id", asyncRoute(async (req, res) => {
   if (!isValidId(req.params.id)) return res.status(400).json({ success: false, message: "Invalid payment method id." });
-  const method = await PaymentMethod.findOneAndUpdate(
-    { _id: req.params.id, userId: req.user.id },
-    { status: "removed" },
-    { new: true }
-  );
+  const method = await updatePaymentMethodForUser(req.params.id, req.user.id, { status: "removed" });
   if (!method) return res.status(404).json({ success: false, message: "Payment method not found." });
   return res.json({ success: true, message: "Payment method removed." });
 }));
 
 router.patch("/payment-methods/:id/default", asyncRoute(async (req, res) => {
   if (!isValidId(req.params.id)) return res.status(400).json({ success: false, message: "Invalid payment method id." });
-  await PaymentMethod.updateMany({ userId: req.user.id }, { isDefault: false });
-  const method = await PaymentMethod.findOneAndUpdate(
-    { _id: req.params.id, userId: req.user.id },
-    { isDefault: true },
-    { new: true }
-  );
+  await clearDefaultPaymentMethods(req.user.id);
+  const method = await updatePaymentMethodForUser(req.params.id, req.user.id, { is_default: true });
   if (!method) return res.status(404).json({ success: false, message: "Payment method not found." });
   return res.json({ success: true, paymentMethod: method });
 }));

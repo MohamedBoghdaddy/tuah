@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AdminShell } from "../Components/AdminShell";
 import { commerceApi, storageApi } from "../services/api";
+import DataTable from "../Components/ui/DataTable";
+import StatCard from "../Components/ui/StatCard";
+import StatusBadge from "../Components/ui/StatusBadge";
+import ConfirmDialog from "../Components/ui/ConfirmDialog";
 import "../Styles/admin-premium.css";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────────
@@ -35,10 +39,10 @@ const formNumberValue = (value) => {
 
 const parseFormNumber = (value) => Number(cleanNumericInput(value));
 
-const statusBadge = (stock) => {
-  if (Number(stock) === 0) return { label: "Out of Stock", cls: "badge-danger" };
-  if (Number(stock) <= 5) return { label: "Low Stock", cls: "badge-warn" };
-  return { label: "In Stock", cls: "badge-ok" };
+const stockStatus = (stock) => {
+  if (Number(stock) === 0) return "out_of_stock";
+  if (Number(stock) <= 5) return "low_stock";
+  return "in_stock";
 };
 
 const productKey = (product) => product?._id || product?.id;
@@ -72,6 +76,8 @@ export default function AdminProducts() {
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   // image upload state
   const [imageFile, setImageFile] = useState(null);
@@ -280,14 +286,20 @@ export default function AdminProducts() {
   };
 
   // ── delete ─────────────────────────────────────────────────────────────────────
-  const handleDelete = async (product) => {
-    if (!window.confirm(`Archive "${product.name}"? It will be hidden from public product pages.`)) return;
+  const requestDelete = (product) => setDeleteTarget(product);
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await commerceApi.deleteProduct?.(productKey(product));
+      await commerceApi.deleteProduct?.(productKey(deleteTarget));
       showToast("Product archived.", "ok");
       await loadProducts();
+      setDeleteTarget(null);
     } catch (err) {
       showToast(adminProductErrorMessage(err, "Delete failed."), "error");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -306,77 +318,79 @@ export default function AdminProducts() {
       {/* stats row */}
       <section className="admin-stats-row">
         <StatCard label="Total Products" value={products.length} />
-        <StatCard label="Low Stock" value={lowStock} warn />
-        <StatCard label="Out of Stock" value={outOfStock} danger />
+        <StatCard label="Low Stock" value={lowStock} tone="warn" />
+        <StatCard label="Out of Stock" value={outOfStock} tone="danger" />
         <StatCard label="Archived" value={archived} />
       </section>
 
-      {/* toolbar */}
-      <div className="admin-toolbar">
-        <h2 className="admin-section-title">All Products</h2>
-        <button className="admin-premium-button primary" type="button" onClick={openAdd}>
-          <span className="material-symbols-outlined">add</span>
-          Add Product
-        </button>
-      </div>
-
       {/* table */}
-      {loading ? (
-        <p className="admin-loading">Loading products…</p>
-      ) : products.length === 0 ? (
-        <p className="admin-empty">No products yet. Click "Add Product" to create one.</p>
-      ) : (
-        <div className="admin-table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Image</th>
-                <th>Name</th>
-                <th>Category</th>
-                <th>Price</th>
-                <th>Stock</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map((product) => {
-                const badge = statusBadge(product.stock);
-                const thumb = product.imageUrl || product.images?.[0];
-                return (
-                  <tr key={productKey(product)}>
-                    <td>
-                      {thumb ? (
-                        <img className="admin-product-thumb" src={thumb} alt={product.name} />
-                      ) : (
-                        <span className="admin-product-thumb-placeholder material-symbols-outlined">
-                          image
-                        </span>
-                      )}
-                    </td>
-                    <td className="admin-cell-name">{product.name}</td>
-                    <td>{product.collection || product.category}</td>
-                    <td>${Number(product.price || 0).toLocaleString()}</td>
-                    <td>{product.stock}</td>
-                    <td>
-                      <span className={`admin-badge ${product.status === "archived" ? "badge-muted" : badge.cls}`}>
-                        {product.status === "archived" ? "Archived" : badge.label}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="admin-row-actions">
-                        <button type="button" onClick={() => openView(product)}>View</button>
-                        <button type="button" onClick={() => openEdit(product)}>Edit</button>
-                        <button type="button" className="danger" onClick={() => handleDelete(product)}>Archive</button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <DataTable
+        title="All Products"
+        loading={loading}
+        rows={products}
+        rowKey={productKey}
+        searchPlaceholder="Search products…"
+        searchFn={(product, query) => {
+          const needle = query.toLowerCase();
+          return (
+            product.name?.toLowerCase().includes(needle) ||
+            product.category?.toLowerCase().includes(needle) ||
+            product.sku?.toLowerCase().includes(needle)
+          );
+        }}
+        emptyTitle="No products yet"
+        emptyDescription='Click "Add Product" to create your first catalogue entry.'
+        toolbarActions={
+          <button className="admin-premium-button primary" type="button" onClick={openAdd}>
+            <span className="material-symbols-outlined">add</span>
+            Add Product
+          </button>
+        }
+        columns={[
+          {
+            key: "image",
+            header: "Image",
+            render: (product) => {
+              const thumb = product.imageUrl || product.images?.[0];
+              return thumb ? (
+                <img className="admin-product-thumb" src={thumb} alt={product.name} />
+              ) : (
+                <span className="admin-product-thumb-placeholder material-symbols-outlined">image</span>
+              );
+            },
+          },
+          { key: "name", header: "Name", sortable: true, render: (product) => <span className="admin-cell-name">{product.name}</span> },
+          { key: "category", header: "Category", sortable: true, render: (product) => product.collection || product.category },
+          { key: "price", header: "Price", sortable: true, render: (product) => `$${Number(product.price || 0).toLocaleString()}` },
+          { key: "stock", header: "Stock", sortable: true },
+          {
+            key: "status",
+            header: "Status",
+            render: (product) =>
+              product.status === "archived" ? (
+                <StatusBadge status="archived" label="Archived" />
+              ) : (
+                <StatusBadge status={stockStatus(product.stock)} />
+              ),
+          },
+        ]}
+        rowActions={(product) => [
+          { label: "View", onClick: () => openView(product) },
+          { label: "Edit", onClick: () => openEdit(product) },
+          { label: "Archive", danger: true, onClick: () => requestDelete(product) },
+        ]}
+      />
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title={`Archive "${deleteTarget?.name}"?`}
+        description="It will be hidden from public product pages. You can restore it later from Supabase if needed."
+        confirmLabel="Archive"
+        danger
+        loading={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
 
       {/* Add / Edit modal */}
       {(modal === "add" || modal === "edit") && (
@@ -605,7 +619,7 @@ export default function AdminProducts() {
 
             <div className="admin-modal-footer">
               <button type="button" className="admin-premium-button" onClick={() => { closeModal(); openEdit(selected); }}>Edit</button>
-              <button type="button" className="admin-premium-button danger" onClick={() => { closeModal(); handleDelete(selected); }}>Archive</button>
+              <button type="button" className="admin-premium-button danger" onClick={() => { closeModal(); requestDelete(selected); }}>Archive</button>
             </div>
           </div>
         </div>
@@ -613,10 +627,3 @@ export default function AdminProducts() {
     </AdminShell>
   );
 }
-
-const StatCard = ({ label, value, warn, danger }) => (
-  <div className={`admin-stat-card${warn ? " warn" : danger ? " danger" : ""}`}>
-    <p>{label}</p>
-    <strong>{value}</strong>
-  </div>
-);

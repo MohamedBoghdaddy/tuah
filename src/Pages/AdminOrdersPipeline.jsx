@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AdminSidebar } from "../Components/AdminShell";
+import { AdminShell } from "../Components/AdminShell";
+import StatusBadge from "../Components/ui/StatusBadge";
 import { commerceApi } from "../services/api";
 import "../Styles/admin-premium.css";
 
@@ -104,89 +105,82 @@ export default function AdminOrdersPipeline() {
   }, [orders]);
 
   return (
-    <div className="orders-premium-page">
-      <AdminSidebar active="Orders" />
+    <AdminShell
+      active="Orders"
+      title="Orders Pipeline"
+      subtitle={!loading ? `${orders.length} orders` : undefined}
+      actions={
+        <button className="admin-premium-button" type="button" onClick={loadOrders} disabled={loading}>
+          <span className="material-symbols-outlined">refresh</span>
+          Refresh
+        </button>
+      }
+    >
+      {/* Toast */}
+      {toast.msg && (
+        <div className={`admin-toast admin-toast--${toast.type}`}
+          style={{ position: "fixed", top: 16, right: 16, zIndex: 9999 }}>
+          {toast.msg}
+        </div>
+      )}
 
-      <main className="admin-premium-main">
-        {/* Toast */}
-        {toast.msg && (
-          <div className={`admin-toast admin-toast--${toast.type}`}
-            style={{ position: "fixed", top: 16, right: 16, zIndex: 9999 }}>
-            {toast.msg}
-          </div>
-        )}
+      {/* Error */}
+      {error && (
+        <div style={{ padding: "24px 32px", color: "#dc2626", background: "#fff1f0", borderRadius: 8, margin: "0 0 24px" }}>
+          <strong>Could not load orders:</strong> {error}
+        </div>
+      )}
 
-        <header className="admin-premium-topbar">
-          <div className="admin-premium-actions">
-            <h1>Orders Pipeline</h1>
-            {!loading && <span style={{ color: "#94a3b8", fontSize: 13 }}>{orders.length} orders</span>}
-          </div>
-          <div className="admin-premium-actions">
-            <button className="admin-premium-button" type="button" onClick={loadOrders} disabled={loading}>
-              <span className="material-symbols-outlined">refresh</span>
-              Refresh
-            </button>
-          </div>
-        </header>
+      {/* Loading skeleton */}
+      {loading && (
+        <div style={{ padding: "40px 32px", color: "#94a3b8", textAlign: "center" }}>
+          Loading orders…
+        </div>
+      )}
 
-        {/* Error */}
-        {error && (
-          <div style={{ padding: "24px 32px", color: "#dc2626", background: "#fff1f0", borderRadius: 8, margin: "0 32px 24px" }}>
-            <strong>Could not load orders:</strong> {error}
-          </div>
-        )}
-
-        {/* Loading skeleton */}
-        {loading && (
-          <div style={{ padding: "40px 32px", color: "#94a3b8", textAlign: "center" }}>
-            Loading orders…
-          </div>
-        )}
-
-        {!loading && !error && (
-          <div className="orders-premium-workspace">
-            <section className="orders-premium-board" aria-label="Orders pipeline board">
-              <div className="orders-premium-lanes">
-                {LANES.map((lane) => (
-                  <div className="orders-lane" key={lane.key}>
-                    <div className="orders-lane-header">
-                      <span>
-                        <i className="orders-dot" style={{ background: lane.color }} />
-                        {lane.label} ({byLane[lane.key].length})
-                      </span>
-                    </div>
-
-                    {byLane[lane.key].length === 0 && (
-                      <div style={{ padding: "12px 8px", color: "#64748b", fontSize: 12, fontStyle: "italic" }}>
-                        No orders
-                      </div>
-                    )}
-
-                    {byLane[lane.key].map((order) => (
-                      <OrderCard
-                        key={order._id || order.id}
-                        order={order}
-                        selected={(order._id || order.id) === selectedId}
-                        onSelect={() => openOrder(order)}
-                      />
-                    ))}
+      {!loading && !error && (
+        <div className="orders-premium-workspace">
+          <section className="orders-premium-board" aria-label="Orders pipeline board">
+            <div className="orders-premium-lanes">
+              {LANES.map((lane) => (
+                <div className="orders-lane" key={lane.key}>
+                  <div className="orders-lane-header">
+                    <span>
+                      <i className="orders-dot" style={{ background: lane.color }} />
+                      {lane.label} ({byLane[lane.key].length})
+                    </span>
                   </div>
-                ))}
-              </div>
-            </section>
 
-            {selected && drawerOpen && (
-              <OrderDrawer
-                order={selected}
-                onClose={() => setDrawerOpen(false)}
-                onAdvance={() => handleAdvanceStatus(selected)}
-                updating={updatingId === (selected._id || selected.id)}
-              />
-            )}
-          </div>
-        )}
-      </main>
-    </div>
+                  {byLane[lane.key].length === 0 && (
+                    <div style={{ padding: "12px 8px", color: "#64748b", fontSize: 12, fontStyle: "italic" }}>
+                      No orders
+                    </div>
+                  )}
+
+                  {byLane[lane.key].map((order) => (
+                    <OrderCard
+                      key={order._id || order.id}
+                      order={order}
+                      selected={(order._id || order.id) === selectedId}
+                      onSelect={() => openOrder(order)}
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {selected && drawerOpen && (
+            <OrderDrawer
+              order={selected}
+              onClose={() => setDrawerOpen(false)}
+              onAdvance={() => handleAdvanceStatus(selected)}
+              updating={updatingId === (selected._id || selected.id)}
+            />
+          )}
+        </div>
+      )}
+    </AdminShell>
   );
 }
 
@@ -232,11 +226,7 @@ function OrderCard({ order, selected, onSelect }) {
           </div>
         )}
         {order.paymentStatus && order.paymentStatus !== "pending" && (
-          <span className="orders-badge"
-            style={{ background: order.paymentStatus === "paid" ? "#dcfce7" : "#fef2f2",
-              color: order.paymentStatus === "paid" ? "#166534" : "#dc2626" }}>
-            {order.paymentStatus}
-          </span>
+          <StatusBadge status={order.paymentStatus} />
         )}
       </div>
     </button>
@@ -269,18 +259,8 @@ function OrderDrawer({ order, onClose, onAdvance, updating }) {
         <section className="orders-drawer-section">
           <p className="orders-label">Status</p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span className="admin-badge" style={{ background: "#1e293b", color: "#cbd5e1", padding: "4px 10px", borderRadius: 4, fontSize: 12 }}>
-              {order.status?.replace("_", " ")}
-            </span>
-            {order.paymentStatus && (
-              <span className="admin-badge" style={{
-                background: order.paymentStatus === "paid" ? "#dcfce7" : "#fef3c7",
-                color: order.paymentStatus === "paid" ? "#166534" : "#92400e",
-                padding: "4px 10px", borderRadius: 4, fontSize: 12
-              }}>
-                {order.paymentStatus}
-              </span>
-            )}
+            <StatusBadge status={order.status} />
+            {order.paymentStatus && <StatusBadge status={order.paymentStatus} />}
           </div>
         </section>
 

@@ -1,5 +1,5 @@
 import express from "express";
-import mongoose from "mongoose";
+import { isSupabaseConfigured } from "../config/supabase.js";
 import {
   getPublicProductBySlugOrId,
   listPublicProducts,
@@ -16,7 +16,8 @@ import {
 const router = express.Router();
 
 const byIdOrSlug = (items, id) => items.find((item) => item.id === id || item.slug === id);
-const isDbConnected = () => mongoose.connection.readyState === 1;
+// Products now live in Postgres (Supabase) — this used to check Mongo.
+const isDbConnected = () => isSupabaseConfigured();
 const getSessionCart = (req) => req.session?.cart || [];
 const setSessionCart = (req, cart) => {
   if (req.session) req.session.cart = cart;
@@ -58,10 +59,10 @@ const removeCartItem = (req, res) => {
 router.get("/health", (req, res) => {
   res.json({
     ok: true,
-    mode: req.app.locals.mongoMode || "demo",
-    mongo: {
-      available: req.app.locals.mongoAvailable === true,
-      source: req.app.locals.mongoUriSource || null,
+    mode: req.app.locals.dbMode || "demo",
+    database: {
+      available: req.app.locals.dbAvailable === true,
+      provider: "supabase",
     },
   });
 });

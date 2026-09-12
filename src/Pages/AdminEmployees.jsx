@@ -3,6 +3,7 @@ import { AdminShell } from "../Components/AdminShell";
 import { useAuthContext } from "../context/AuthContext";
 import { can } from "../utils/permissions";
 import { commerceApi, storageApi, API_URL } from "../services/api";
+import StatusBadge from "../Components/ui/StatusBadge";
 import "../Styles/admin-premium.css";
 
 // Static demo roster (will be replaced by live data once an employee list endpoint exists)
@@ -42,12 +43,12 @@ const DEMO_EMPLOYEES = [
   },
 ];
 
-const STATUS_LABEL = {
-  none: { text: "Not invited", cls: "badge-muted" },
-  queued: { text: "Invite queued", cls: "badge-warn" },
-  sent: { text: "Invite sent", cls: "badge-ok" },
-  failed: { text: "Invite failed", cls: "badge-danger" },
-  provider_not_configured: { text: "Queued (no provider)", cls: "badge-warn" },
+const INVITE_STATUS_LABEL = {
+  none: "Not invited",
+  queued: "Invite queued",
+  sent: "Invite sent",
+  failed: "Invite failed",
+  provider_not_configured: "Queued (no provider)",
 };
 
 // ─── main component ───────────────────────────────────────────────────────────────
@@ -260,8 +261,6 @@ const EmployeeCard = ({ employee, showToast, onPhotoUploaded, onInviteUpdated })
     }
   };
 
-  const invBadge = STATUS_LABEL[employee.invitationEmailStatus] || STATUS_LABEL.none;
-
   const handleSendInvite = async () => {
     if (!employee._id) return;
     setSendingInvite(true);
@@ -321,7 +320,10 @@ const EmployeeCard = ({ employee, showToast, onPhotoUploaded, onInviteUpdated })
         <h2>{employee.name}</h2>
         <p className="employee-role">{employee.role}</p>
 
-        <span className={`admin-badge ${invBadge.cls}`}>{invBadge.text}</span>
+        <StatusBadge
+          status={employee.invitationEmailStatus}
+          label={INVITE_STATUS_LABEL[employee.invitationEmailStatus] || INVITE_STATUS_LABEL.none}
+        />
 
         <div className="employee-metrics">
           {employee.metrics.map(([icon, label, value]) => (

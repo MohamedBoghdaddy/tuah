@@ -341,6 +341,14 @@ export const commerceApi = {
   getDashboard: () =>
     request("/api/admin/dashboard/summary").catch(() => buildDashboard(readStore())),
 
+  getNotifications: () =>
+    withFallback(
+      "/api/notifications",
+      {},
+      () => readStore().notifications || [],
+      (payload) => unwrapList(payload, "notifications")
+    ),
+
   getOrders: (filters = {}) => {
     const params = new URLSearchParams(
       Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== undefined && v !== ""))

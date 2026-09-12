@@ -4,22 +4,13 @@ import { AdminShell } from "../Components/AdminShell";
 import { useAuthContext } from "../context/AuthContext";
 import { can } from "../utils/permissions";
 import { getAuthHeaders } from "../services/authHeaders";
+import StatusBadge from "../Components/ui/StatusBadge";
 
 const API_URL =
   process.env.REACT_APP_API_URL ??
   (window.location.hostname === "localhost"
     ? "http://localhost:4000"
     : "https://tuah.onrender.com");
-
-const STATUS_COLORS = {
-  present: "#22c55e",
-  late: "#f59e0b",
-  absent: "#ef4444",
-  half_day: "#a78bfa",
-  leave: "#6366f1",
-  holiday: "#0ea5e9",
-  remote: "#06b6d4",
-};
 
 const STATUS_OPTIONS = ["present", "late", "absent", "half_day", "leave", "holiday", "remote"];
 
@@ -96,20 +87,6 @@ const getRecordEmployee = (record, employees = []) => {
     department: record.department || "",
     meta: record.department || "",
   };
-};
-
-const toFriendlyAttendanceError = (message) => {
-  if (!message) return "Save failed";
-  const lower = String(message).toLowerCase();
-  if (
-    lower.includes("employeeid") ||
-    lower.includes("objectid") ||
-    lower.includes("cast to") ||
-    lower.includes("employee not found")
-  ) {
-    return "Selected employee could not be found. Please choose another employee.";
-  }
-  return message;
 };
 
 const emptyForm = {
@@ -517,16 +494,7 @@ export default function AdminAttendance() {
                   <td>{rec.breakMinutes || 0}m</td>
                   <td>{rec.totalWorkedMinutes || "—"}</td>
                   <td>
-                    <span style={{
-                      padding: "2px 8px",
-                      borderRadius: 999,
-                      fontSize: 11,
-                      fontWeight: 600,
-                      background: STATUS_COLORS[rec.status] + "20",
-                      color: STATUS_COLORS[rec.status],
-                    }}>
-                      {rec.status?.replace("_", " ") || "—"}
-                    </span>
+                    <StatusBadge status={rec.status} />
                   </td>
                   <td>{rec.source || "—"}</td>
                   {(canEdit || canDelete) && (

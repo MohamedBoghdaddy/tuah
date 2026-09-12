@@ -1,18 +1,25 @@
 @import url("https://fonts.googleapis.com/css2?family=Noto+Serif:wght@300;400;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap");
 
+/*
+ * These variables used to hardcode their own color literals, duplicating
+ * design-system.css's :root tokens under different names. They now alias
+ * the global tokens so there is one source of truth for the palette —
+ * the variable names are kept as-is (dozens of rules below reference them)
+ * but changing a color now only requires editing design-system.css.
+ */
 :root {
-  --admin-premium-bg: #fcf9f4;
-  --admin-premium-card: #ffffff;
-  --admin-premium-low: #f6f3ee;
-  --admin-premium-surface: #f0ede8;
-  --admin-premium-border: #c6c6cd;
-  --admin-premium-text: #1c1c19;
-  --admin-premium-muted: #45464d;
-  --admin-premium-gold: #a07e48;
-  --admin-premium-amber: #d97706;
-  --admin-premium-navy: #0f172a;
-  --admin-premium-hover: #1e293b;
+  --admin-premium-bg: var(--color-background);
+  --admin-premium-card: var(--color-surface-lowest);
+  --admin-premium-low: var(--color-surface-low);
+  --admin-premium-surface: var(--color-surface-container);
+  --admin-premium-border: var(--color-outline-variant);
+  --admin-premium-text: var(--color-on-surface);
+  --admin-premium-muted: var(--color-on-surface-variant);
+  --admin-premium-gold: var(--color-on-tertiary-container);
+  --admin-premium-amber: var(--color-admin-active);
+  --admin-premium-navy: var(--color-admin-bg);
+  --admin-premium-hover: var(--color-admin-hover);
 }
 
 .admin-premium-page,
@@ -1803,3 +1810,228 @@
     min-height: 38px;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   ERP SHELL — collapsible sidebar, nav groups, org chip, topbar cluster
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── Org/branch context chip ─────────────────────────────────────────── */
+.admin-org-chip {
+  margin: 0 16px 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(148, 163, 184, 0.12);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #cbd5e1;
+  font-size: 11px;
+}
+.admin-org-chip .material-symbols-outlined { font-size: 16px; flex-shrink: 0; }
+.admin-org-chip strong { display: block; color: #fff; font-size: 12px; }
+.admin-org-chip span { display: block; opacity: 0.8; }
+
+/* ── Sidebar collapse toggle ──────────────────────────────────────────── */
+.admin-sidebar-collapse-btn {
+  position: absolute;
+  top: 20px;
+  right: -12px;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--admin-premium-navy);
+  border: 1px solid #1e293b;
+  color: #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 41;
+}
+.admin-sidebar-collapse-btn .material-symbols-outlined { font-size: 16px; }
+.admin-sidebar-collapse-btn:hover { color: #fff; background: var(--admin-premium-hover); }
+
+.admin-premium-sidebar { position: sticky; transition: width 180ms ease; }
+.admin-premium-sidebar--collapsed { width: 76px; }
+.admin-premium-sidebar--collapsed .admin-premium-nav-link span:last-child,
+.admin-premium-sidebar--collapsed .admin-nav-group-label,
+.admin-premium-sidebar--collapsed .admin-nav-group-chevron,
+.admin-premium-sidebar--collapsed .admin-org-chip span:not(.material-symbols-outlined),
+.admin-premium-sidebar--collapsed .admin-premium-profile > div,
+.admin-premium-sidebar--collapsed .admin-premium-logout span:last-child {
+  display: none;
+}
+.admin-premium-sidebar--collapsed .admin-premium-nav-link,
+.admin-premium-sidebar--collapsed .admin-nav-group-header {
+  justify-content: center;
+}
+.admin-premium-sidebar--collapsed .admin-premium-brand { text-align: center; }
+.admin-premium-sidebar--collapsed .admin-premium-brand p { display: none; }
+
+/* ── Collapsible nav groups ───────────────────────────────────────────── */
+.admin-nav-group { border-bottom: 1px solid rgba(148, 163, 184, 0.08); }
+.admin-nav-group-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  background: transparent;
+  border: 0;
+  color: #94a3b8;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+}
+.admin-nav-group-header:hover { color: #fff; }
+.admin-nav-group-label { flex: 1; }
+.admin-nav-group-chevron { font-size: 18px; transition: transform 160ms ease; }
+.admin-nav-group.admin-nav-group--open .admin-nav-group-chevron { transform: rotate(180deg); }
+.admin-nav-group-items { display: flex; flex-direction: column; padding-bottom: 4px; }
+.admin-nav-group-items .admin-premium-nav-link { padding-left: 44px; font-size: 13px; }
+.admin-premium-sidebar--collapsed .admin-nav-group-items .admin-premium-nav-link { padding-left: 16px; }
+
+.admin-premium-nav-link.coming-soon { opacity: 0.65; }
+.admin-premium-nav-link.coming-soon .admin-nav-soon-tag {
+  margin-left: auto;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: rgba(148, 163, 184, 0.18);
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+.admin-premium-sidebar--collapsed .admin-nav-soon-tag { display: none; }
+
+/* ── Topbar left cluster: breadcrumbs above title ─────────────────────── */
+.admin-premium-topbar-left { min-width: 0; }
+
+/* ── Topbar right cluster: search / notifications / profile ──────────── */
+.admin-topbar-cluster { display: flex; align-items: center; gap: 6px; }
+.admin-topbar-divider { width: 1px; height: 28px; background: var(--color-outline-variant); margin: 0 6px; }
+
+.admin-topbar-search-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--admin-premium-border);
+  background: var(--color-surface-lowest);
+  color: var(--admin-premium-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+.admin-topbar-search-trigger .material-symbols-outlined { font-size: 18px; }
+.admin-topbar-search-trigger kbd {
+  font-size: 10px;
+  border: 1px solid var(--color-outline-variant);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-left: 6px;
+}
+
+.admin-topbar-icon-btn {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--admin-premium-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.admin-topbar-icon-btn:hover { background: var(--color-surface-container); }
+.admin-topbar-icon-btn .ui-notification-dot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-admin-active);
+  border: 2px solid var(--color-surface-lowest);
+}
+
+.admin-topbar-popover-wrap { position: relative; }
+.admin-notifications-panel, .admin-profile-menu-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  background: var(--color-surface-lowest);
+  border: 1px solid var(--color-outline-variant);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  z-index: 60;
+}
+.admin-notifications-panel { width: 320px; max-height: 420px; overflow-y: auto; }
+.admin-notifications-panel-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--color-outline-variant);
+  font-size: 13px;
+  font-weight: 700;
+}
+.admin-notification-item { display: flex; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--color-surface-container); }
+.admin-notification-item:last-child { border-bottom: 0; }
+.admin-notification-item .material-symbols-outlined { color: var(--color-admin-active); font-size: 18px; margin-top: 2px; }
+.admin-notification-item strong { display: block; font-size: 12px; }
+.admin-notification-item p { margin: 2px 0 0; font-size: 12px; color: var(--admin-premium-muted); }
+.admin-notification-item time { display: block; margin-top: 4px; font-size: 10px; color: var(--color-outline); }
+.admin-notifications-empty { padding: 32px 16px; text-align: center; font-size: 12px; color: var(--admin-premium-muted); }
+
+.admin-profile-menu-panel { width: 220px; padding: 8px; }
+.admin-profile-menu-header { padding: 8px 10px 10px; border-bottom: 1px solid var(--color-outline-variant); margin-bottom: 6px; }
+.admin-profile-menu-header strong { display: block; font-size: 13px; }
+.admin-profile-menu-header span { display: block; font-size: 11px; color: var(--admin-premium-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.admin-profile-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  color: var(--admin-premium-text);
+  cursor: pointer;
+  text-decoration: none;
+}
+.admin-profile-menu-item:hover { background: var(--color-surface-container); }
+.admin-profile-menu-item.danger { color: var(--color-error); }
+
+@media (max-width: 900px) {
+  .admin-topbar-search-trigger span:not(.material-symbols-outlined) { display: none; }
+  .admin-topbar-search-trigger kbd { display: none; }
+}
+
+@media (max-width: 640px) {
+  .admin-topbar-divider { display: none; }
+}
+
+/* Sidebar collapse toggle only makes sense on desktop */
+@media (max-width: 1024px) {
+  .admin-sidebar-collapse-btn { display: none; }
+}
+
+/* ── Coming soon page ─────────────────────────────────────────────────── */
+.admin-coming-soon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: 80px 24px;
+  border: 1px dashed var(--color-outline-variant);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-low);
+}
+.admin-coming-soon .material-symbols-outlined { font-size: 40px; color: var(--color-admin-active); }
+.admin-coming-soon h2 { margin: 4px 0 0; font-family: var(--font-serif); font-weight: 400; font-size: 24px; }
+.admin-coming-soon p { margin: 0; max-width: 460px; color: var(--admin-premium-muted); font-size: 14px; }

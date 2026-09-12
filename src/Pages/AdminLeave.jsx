@@ -4,20 +4,13 @@ import { AdminShell } from "../Components/AdminShell";
 import { useAuthContext } from "../context/AuthContext";
 import { can } from "../utils/permissions";
 import { getAuthHeaders } from "../services/authHeaders";
+import StatusBadge from "../Components/ui/StatusBadge";
 
 const API_URL =
   process.env.REACT_APP_API_URL ??
   (window.location.hostname === "localhost"
     ? "http://localhost:4000"
     : "https://tuah.onrender.com");
-
-const STATUS_COLORS = {
-  pending:   { bg: "#f59e0b20", color: "#f59e0b" },
-  approved:  { bg: "#22c55e20", color: "#22c55e" },
-  rejected:  { bg: "#ef444420", color: "#ef4444" },
-  cancelled: { bg: "#64748b20", color: "#64748b" },
-  escalated: { bg: "#a78bfa20", color: "#a78bfa" },
-};
 
 const TYPE_LABELS = {
   vacation:       "Vacation",
@@ -247,7 +240,6 @@ export default function AdminLeave() {
             </thead>
             <tbody>
               {requests.map((req) => {
-                const style = STATUS_COLORS[req.status] || {};
                 return (
                   <tr
                     key={req._id}
@@ -263,9 +255,7 @@ export default function AdminLeave() {
                     <td>{formatDate(req.startDate)}</td>
                     <td>{formatDate(req.endDate)}</td>
                     <td>
-                      <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 11, fontWeight: 600, background: style.bg, color: style.color }}>
-                        {req.status}
-                      </span>
+                      <StatusBadge status={req.status} />
                     </td>
                     <td>{formatDate(req.createdAt)}</td>
                     {(canApprove || canReject || canEscalate) && (
