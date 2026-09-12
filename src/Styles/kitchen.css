@@ -1,0 +1,71 @@
+.kitchenproduct {
+    margin-top: 20px;
+    height: 90vh !important;
+}
+
+.item {
+    height: 550px !important;
+    width: 95% !important;
+    margin: 20px;
+}
+
+.imgWrapper {
+    height: 62% !important;
+    width: 98% !important;
+}
+
+.resizeImg {
+    height: 320px !important;
+    width: 325px !important;
+    margin: 10px;
+    border-radius: 5%;
+}
+
+.slider1 {
+    margin-top: 20px;
+    margin-left: 10px;
+    margin-right: 20px;
+    height: 75vh !important;
+    width: 96vw !important;
+}
+
+/* ✅ Actions & Buttons */
+.actions .Button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px !important;
+    height: 40px !important;
+    width: 40px !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    border-radius: 50% !important;
+    background: white !important;
+    transition: background 0.3s ease-in-out;
+}
+
+.actions .Button:hover {
+    background-color: black !important;
+}
+
+.actions .Button:hover svg {
+    color: #fff !important;
+}
+
+/* ✅ Slider Dots Position */
+.slick-dots {
+    bottom: 10px !important;
+}
+
+@media (max-width: 768px) {
+    .slick-dots {
+        bottom: 15px !important;
+    }
+}
+
+/* ✅ Responsive */
+@media (max-width: 768px) {
+    .slider1 {
+        flex-direction: column;
+        flex-wrap: wrap;
+    }
+}

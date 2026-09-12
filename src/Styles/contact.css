@@ -1,0 +1,165 @@
+
+/* Contact Section */
+.contact-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+  margin-top:55px;
+}
+
+/* Contact Form Frame */
+.frame-container {
+  background: rgba(40, 50, 70, 0.9);
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.3);
+  width: 600px;
+  text-align: center;
+  backdrop-filter: blur(10px);
+}
+
+.frame-container h2 {
+  font-size: 28px;
+  font-weight: bold;
+  color: #00c896;
+  margin-bottom: 10px;
+}
+
+.sub--title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #c0c0c0;
+  margin-bottom: 20px;
+}
+
+/* Form Fields */
+.contact-form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.contact-label {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  font-weight: 500;
+  font-size: 16px;
+  color: #ffffff;
+}
+
+/* Input Fields */
+.contact-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  font-size: 16px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  transition: border-color 0.3s ease, background 0.3s ease;
+}
+
+.contact-input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.contact-input:focus {
+  outline: none;
+  border-color: #00c896;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Dropdown Fix - Black Text */
+.contact-input select {
+  color: #000;
+  background: #ffffff;
+}
+
+.contact-input option {
+  color: #000;
+  background: #ffffff;
+}
+
+/* Message Field */
+.contact-input textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* Checkbox */
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #c0c0c0;
+}
+
+.checkbox-label input {
+  transform: scale(1.2);
+}
+
+/* Submit Button */
+.contact-form-btn {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(45deg, #00c896, #008080);
+  border: none;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: bold;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.contact-form-btn:hover {
+  background: linear-gradient(45deg, #008080, #00a586);
+  transform: scale(1.02);
+}
+
+/* Error Messages */
+.error-message {
+  color: #ff6b6b;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+/* Status Message */
+.message-status {
+  margin-top: 10px;
+  font-size: 16px;
+  font-weight: bold;
+  color: #f1c40f;
+}
+
+/* Custom Fonts */
+@font-face {
+  font-family: "Beverly";
+  src: url("../Assets/Fonts/Beverly.otf") format("opentype");
+}
+
+@font-face {
+  font-family: "Aeonik-Thin";
+  src: url("../Assets/Fonts/Aeonik-Thin.otf") format("opentype");
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .frame-container {
+    width: 90%;
+    padding: 30px;
+  }
+
+  .frame-container h2 {
+    font-size: 24px;
+  }
+
+  .contact-form-btn {
+    font-size: 16px;
+    padding: 10px;
+  }
+}

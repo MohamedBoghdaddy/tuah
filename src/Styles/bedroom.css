@@ -1,0 +1,149 @@
+/* ==========================
+   ✅ Bedroom Section Styling
+=========================== */
+.bedroomproduct {
+    margin-top: 20px;
+    height: auto !important;
+    padding-bottom: 50px;
+}
+
+.item {
+    height: 550px !important;
+    width: 95% !important;
+    margin: 20px;
+}
+
+.imgWrapper {
+    height: 62% !important;
+    width: 98% !important;
+}
+
+.resizeImg {
+    height: 320px !important;
+    width: 325px !important;
+    margin: 10px;
+    border-radius: 5%;
+}
+
+.slider1 {
+    margin-top: 20px;
+    margin-left: 10px;
+    margin-right: 20px;
+    height: auto !important;
+    width: 96vw !important;
+}
+
+.Slider {
+    justify-content: space-between !important;
+}
+
+/* ==========================
+   ✅ Actions & Buttons
+=========================== */
+.actions .Button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px !important;
+    height: 40px !important;
+    width: 40px !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    border-radius: 50% !important;
+    background: white !important;
+    transition: background 0.3s ease-in-out;
+}
+
+.actions .Button:hover {
+    background-color: black !important;
+}
+
+.actions .Button:hover svg {
+    color: #fff !important;
+}
+
+/* ==========================
+   ✅ View Toggle Button Styles
+=========================== */
+.view-mode-toggle {
+    display: flex;
+    justify-content: center;
+    margin: 15px 0;
+}
+
+.view-mode-toggle button {
+    background: transparent;
+    color: black;
+    border: 1px solid #ccc;
+    padding: 8px 15px;
+    border-radius: 5px;
+    transition: all 0.3s ease-in-out;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.view-mode-toggle button:hover {
+    background: #22c55e;
+    color: white;
+}
+
+.view-mode-toggle button:focus {
+    outline: none;
+}
+
+/* ==========================
+   ✅ Grid View Styles
+=========================== */
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+    padding: 20px;
+    justify-items: center;
+}
+
+.product-card {
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    max-width: 280px;
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0px 8px 12px rgba(0, 0, 0, 0.15);
+}
+
+.product-image {
+    width: 100%;
+    border-radius: 8px;
+}
+
+/* ==========================
+   ✅ Slider Dots Position Fix
+=========================== */
+.slick-dots {
+    bottom: 50px !important;
+}
+
+/* ✅ Responsive */
+@media (max-width: 768px) {
+    .slider1 {
+        flex-direction: column;
+        flex-wrap: wrap;
+    }
+
+    .product-list {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .product-card {
+        max-width: 90%;
+    }
+    
+    .slick-dots {
+        bottom: 100px !important;
+    }
+}

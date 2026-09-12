@@ -1,0 +1,391 @@
+import express from "express";
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+import cors from "cors";
+import session from "express-session";
+import connectMongoDBSession from "connect-mongodb-session";
+import cookieParser from "cookie-parser";
+import multer from "multer";
+import helmet from "helmet";
+import morgan from "morgan";
+import path from "path";
+import { fileURLToPath } from "url";
+
+import commerceRoutes from "./routes/commerceRoutes.js";
+import productRoutes from "./routes/productsRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
+import analyticsRoutes from "./routes/analyticsRoutes.js";
+import settingsRoutes from "./routes/settingsRoutes.js";
+import erpRoutes from "./routes/erpRoutes.js";
+import uploadRoutes from "./routes/uploadRoutes.js";
+import emailAdminRoutes from "./routes/emailAdminRoutes.js";
+import adminProductRoutes from "./routes/adminProductRoutes.js";
+import adminEmployeeRoutes from "./routes/adminEmployeeRoutes.js";
+import adminLeadRoutes from "./routes/adminLeadRoutes.js";
+import adminOrderRoutes from "./routes/adminOrderRoutes.js";
+import orderRoutes from "./routes/orderRoutes.js";
+import customerRoutes from "./routes/customerRoutes.js";
+import attendanceRoutes from "./routes/attendanceRoutes.js";
+import leaveRoutes from "./routes/leaveRoutes.js";
+import importExportRoutes from "./routes/importExportRoutes.js";
+import supportRoutes from "./routes/supportRoutes.js";
+import cartRoutes from "./routes/cartRoutes.js";
+import wishlistRoutes from "./routes/wishlistRoutes.js";
+
+dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const {
+  PORT = 4000,
+  SESSION_SECRET = "tuah-demo-session-secret",
+  FRONTEND_URL,
+  CORS_ORIGIN = "http://localhost:3000",
+  NODE_ENV = "development",
+} = process.env;
+
+const getMongoConfig = () => {
+  const mongoUri = process.env.MONGO_URI?.trim();
+  const mongoUrl = process.env.MONGO_URL?.trim();
+
+  if (mongoUri) return { source: "MONGO_URI", uri: mongoUri };
+  if (mongoUrl) return { source: "MONGO_URL", uri: mongoUrl };
+  return { source: null, uri: "" };
+};
+
+const mongoConfig = getMongoConfig();
+const MONGO_CONNECTION_STRING = mongoConfig.uri;
+const MONGO_SERVER_SELECTION_TIMEOUT_MS = 5000;
+const MONGO_CONNECT_TIMEOUT_MS = 10000;
+const MONGO_CONNECT_OPTIONS = {
+  serverSelectionTimeoutMS: MONGO_SERVER_SELECTION_TIMEOUT_MS,
+  connectTimeoutMS: MONGO_CONNECT_TIMEOUT_MS,
+};
+
+const isProduction = NODE_ENV === "production";
+const app = express();
+const upload = multer({ dest: path.join(__dirname, "uploads") });
+const MongoDBStore = connectMongoDBSession(session);
+
+const allowedOrigins = [
+  CORS_ORIGIN,
+  FRONTEND_URL,
+  "http://localhost:3000",
+  "http://localhost:3001",
+].filter(Boolean);
+
+const redactMongoUri = (uri) => {
+  if (!uri) return "(not set)";
+
+  try {
+    const parsed = new URL(uri);
+    const credentials =
+      parsed.username || parsed.password ? "<credentials>@" : "";
+    return `${parsed.protocol}//${credentials}${parsed.host}${parsed.pathname}`;
+  } catch {
+    const scheme = uri.match(/^mongodb(?:\+srv)?:\/\//i)?.[0] || "mongodb://";
+    const withoutScheme = uri.replace(/^mongodb(?:\+srv)?:\/\//i, "");
+    const withoutAuth = withoutScheme.replace(/^[^@/]+@/, "<credentials>@");
+    return `${scheme}${withoutAuth.split(/[?#]/)[0]}`;
+  }
+};
+
+const isSrvMongoUri = MONGO_CONNECTION_STRING.startsWith("mongodb+srv://");
+
+const formatMongoError = (error) => {
+  const rawMessage = error?.reason?.message || error?.message || String(error);
+  const safeMessage = MONGO_CONNECTION_STRING
+    ? rawMessage
+        .split(MONGO_CONNECTION_STRING)
+        .join(redactMongoUri(MONGO_CONNECTION_STRING))
+    : rawMessage;
+
+  if (
+    isSrvMongoUri &&
+    /querySrv|queryTxt|SRV|TXT|ENOTFOUND|ENODATA|ECONNREFUSED|ETIMEOUT/i.test(
+      safeMessage,
+    )
+  ) {
+    return `${safeMessage}. Atlas mongodb+srv connection strings require DNS SRV/TXT resolution. If this network blocks SRV lookups, use the MongoDB Atlas standard non-SRV mongodb:// connection string.`;
+  }
+
+  return safeMessage;
+};
+
+const logMongoConfig = () => {
+  if (process.env.MONGO_URI?.trim() && process.env.MONGO_URL?.trim()) {
+    console.info(
+      "MongoDB config: MONGO_URI and MONGO_URL are both set; using MONGO_URI.",
+    );
+  }
+
+  if (!MONGO_CONNECTION_STRING) {
+    console.warn(
+      "MongoDB config: no connection string found. Checked MONGO_URI first, then MONGO_URL.",
+    );
+    return;
+  }
+
+  console.info(
+    `MongoDB config: using ${mongoConfig.source} (${redactMongoUri(
+      MONGO_CONNECTION_STRING,
+    )}).`,
+  );
+
+  // mongodb+srv Atlas URIs require DNS SRV/TXT resolution for _mongodb._tcp.<cluster-host>.
+  if (isSrvMongoUri) {
+    console.info(
+      "MongoDB config: mongodb+srv detected; this environment must allow DNS SRV/TXT lookups.",
+    );
+  }
+};
+
+const databaseUnavailablePayload = () => ({
+  success: false,
+  message:
+    "MongoDB is unavailable. Database-backed endpoints are temporarily disabled.",
+});
+
+const requireMongoConnection = (req, res, next) => {
+  if (mongoose.connection.readyState === 1) return next();
+  return res.status(503).json(databaseUnavailablePayload());
+};
+
+const isMongoUnavailableError = (error = {}) => {
+  const message = error.message || "";
+  return (
+    [
+      "MongoNetworkError",
+      "MongoServerSelectionError",
+      "MongoTopologyClosedError",
+    ].includes(error.name) ||
+    /bufferCommands|not connected|server selection|topology|connection/i.test(
+      message,
+    )
+  );
+};
+
+const createSessionStore = () => {
+  if (!MONGO_CONNECTION_STRING) return null;
+
+  try {
+    const store = new MongoDBStore(
+      {
+        uri: MONGO_CONNECTION_STRING,
+        collection: "sessions",
+        connectionOptions: MONGO_CONNECT_OPTIONS,
+      },
+      (error) => {
+        if (error) {
+          console.warn(
+            `MongoDB session store unavailable: ${formatMongoError(error)}`,
+          );
+          return;
+        }
+
+        console.info("MongoDB session store connected.");
+      },
+    );
+
+    store.on("error", (error) => {
+      const message = `MongoDB session store warning: ${formatMongoError(error)}`;
+      if (isProduction) console.error(message);
+      else console.warn(message);
+    });
+
+    return store;
+  } catch (error) {
+    console.warn(
+      `MongoDB session store setup failed: ${formatMongoError(error)}`,
+    );
+    if (!isProduction) {
+      console.warn(
+        "Development server will continue with the in-memory session store.",
+      );
+    }
+    return null;
+  }
+};
+
+const configureApp = ({ mongoConnected, sessionStore }) => {
+  app.locals.mongoAvailable = mongoConnected;
+  app.locals.mongoMode = mongoConnected ? "mongo" : "demo";
+  app.locals.mongoUriSource = mongoConfig.source;
+
+  app.use(helmet({ crossOriginResourcePolicy: false }));
+  app.use(morgan(isProduction ? "tiny" : "dev"));
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+  app.use(cookieParser());
+  app.use(
+    cors({
+      origin(origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error("CORS policy violation"));
+        }
+      },
+      methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+      credentials: true,
+    }),
+  );
+  app.use(
+    session({
+      secret: SESSION_SECRET,
+      resave: false,
+      saveUninitialized: false,
+      store: sessionStore || undefined,
+      cookie: {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
+        maxAge: 1000 * 60 * 60 * 24 * 7,
+      },
+    }),
+  );
+
+  app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+  app.post("/upload", upload.single("photo"), (req, res) => {
+    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+    return res.status(201).json({ file: req.file });
+  });
+
+  // ── Specific routes first (more specific path → mounted before catch-alls) ──────
+  // ── Attendance & Leave ────────────────────────────────────────────────────
+  app.use("/api/attendance",      requireMongoConnection, attendanceRoutes);
+  app.use("/api/admin/attendance",requireMongoConnection, attendanceRoutes);
+  app.use("/api/leave",           requireMongoConnection, leaveRoutes);
+  app.use("/api/admin/leave",     requireMongoConnection, leaveRoutes);
+  // ── Import / Export ───────────────────────────────────────────────────────
+  app.use("/api/admin/export",  requireMongoConnection, importExportRoutes);
+  app.use("/api/admin/import",  requireMongoConnection, importExportRoutes);
+
+  // ── Specific routes first (more specific path → mounted before catch-alls) ──
+  app.use("/api/admin/products",  requireMongoConnection, adminProductRoutes);
+  app.use("/api/admin/employees", requireMongoConnection, adminEmployeeRoutes);
+  app.use("/api/admin/orders",    requireMongoConnection, adminOrderRoutes);
+  app.use("/api/admin/dashboard", requireMongoConnection, analyticsRoutes);
+  app.use("/api/admin/analytics", requireMongoConnection, analyticsRoutes);
+  app.use("/api/admin/emails",    requireMongoConnection, emailAdminRoutes);
+  app.use("/api/admin/erp",       requireMongoConnection, erpRoutes);
+  app.use("/api/admin",           requireMongoConnection, adminLeadRoutes);
+  app.use("/api/analytics",       analyticsRoutes);
+  app.use("/api/orders",          requireMongoConnection, orderRoutes);
+  app.use("/api/cart",            requireMongoConnection, cartRoutes);
+  app.use("/api/wishlist",        requireMongoConnection, wishlistRoutes);
+  app.use("/api/customer",        requireMongoConnection, customerRoutes);
+  app.use("/api/support",         requireMongoConnection, supportRoutes);
+  app.use("/api/products",        requireMongoConnection, productRoutes);
+  app.use("/api/users",           userRoutes);
+  app.use("/api/erp",             requireMongoConnection, erpRoutes);
+  app.use("/api/settings",        settingsRoutes);
+  // Hybrid storage routes (Supabase Storage + email outbox)
+  app.use("/api", requireMongoConnection, uploadRoutes);
+  // commerceRoutes last under /api — provides demo fallback for /collections, /cart, /checkout
+  app.use("/api", commerceRoutes);
+
+  app.get("/", (req, res) => {
+    res.json({
+      message: `Tuah API is running in ${app.locals.mongoMode} mode`,
+      mongo: {
+        available: app.locals.mongoAvailable,
+        source: app.locals.mongoUriSource,
+      },
+    });
+  });
+
+  app.use("/api", (req, res) => {
+    res.status(404).json({
+      success: false,
+      message: `API route not found: ${req.method} ${req.originalUrl}`,
+    });
+  });
+
+  app.use((err, req, res, next) => {
+    console.error("Error:", err.message);
+    if (isMongoUnavailableError(err)) {
+      return res.status(503).json(databaseUnavailablePayload());
+    }
+
+    return res
+      .status(500)
+      .json({ message: "Internal Server Error", error: err.message });
+  });
+};
+
+const startServer = () => {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+};
+
+const connectDB = async () => {
+  logMongoConfig();
+
+  if (!MONGO_CONNECTION_STRING) {
+    console.warn(
+      "Running Tuah API with in-memory demo data. Database-backed auth routes will return HTTP 503.",
+    );
+    return false;
+  }
+
+  try {
+    await mongoose.connect(MONGO_CONNECTION_STRING, MONGO_CONNECT_OPTIONS);
+    console.log(`Connected to MongoDB Atlas using ${mongoConfig.source}.`);
+    return true;
+  } catch (error) {
+    console.error(
+      `Failed to connect to MongoDB Atlas using ${mongoConfig.source}: ${formatMongoError(
+        error,
+      )}`,
+    );
+    console.warn(
+      "Continuing in demo/fallback mode. Database-backed auth routes will return HTTP 503.",
+    );
+    return false;
+  }
+};
+
+mongoose.connection.on("connected", () => {
+  app.locals.mongoAvailable = true;
+  app.locals.mongoMode = "mongo";
+});
+
+mongoose.connection.on("disconnected", () => {
+  app.locals.mongoAvailable = false;
+  app.locals.mongoMode = "demo";
+  if (MONGO_CONNECTION_STRING) {
+    console.warn(
+      "MongoDB disconnected. Database-backed endpoints will return HTTP 503 until MongoDB reconnects.",
+    );
+  }
+});
+
+const bootstrap = () => {
+  // Start accepting HTTP requests immediately; database-backed routes return
+  // a clear 503 until MongoDB is connected instead of making the whole service
+  // look hung during cold starts or DNS/session-store delays.
+  const sessionStore = createSessionStore();
+  configureApp({
+    mongoConnected: mongoose.connection.readyState === 1,
+    sessionStore,
+  });
+  startServer();
+
+  connectDB()
+    .then((mongoConnected) => {
+      app.locals.mongoAvailable = mongoConnected;
+      app.locals.mongoMode = mongoConnected ? "mongo" : "demo";
+    })
+    .catch((error) => {
+      app.locals.mongoAvailable = false;
+      app.locals.mongoMode = "demo";
+      console.error(
+        `MongoDB startup check failed: ${formatMongoError(error)}`,
+      );
+    });
+};
+
+bootstrap();
