@@ -1,14 +1,20 @@
 import express from "express";
-import mongoose from "mongoose";
 import { isAuthenticated } from "../middleware/AuthMiddleware.js";
-import Order from "../model/Order.js";
-import Product from "../model/productsmodel.js";
+import {
+  createOrder,
+  listOrdersForCustomer,
+  findOrderForCustomer,
+  cancelOrder,
+  generateOrderNumber,
+} from "../models-pg/orders.js";
+import { findProductById } from "../models-pg/products.js";
 
 const router = express.Router();
 const asyncRoute = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
-const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isValidId = (id) => typeof id === "string" && UUID_RE.test(id);
 
-// ── POST /api/orders — customer checkout creates a real Mongo order ──────────
+// ── POST /api/orders — customer checkout creates a real order ────────────────
 router.post("/", isAuthenticated, asyncRoute(async (req, res) => {
   const { items = [], delivery = {}, payment = {}, totals = {}, customer = {} } = req.body;
 
@@ -16,7 +22,7 @@ router.post("/", isAuthenticated, asyncRoute(async (req, res) => {
     return res.status(400).json({ success: false, message: "Order must contain at least one item." });
   }
 
-  // Resolve product details from Mongo (validate they exist and are active)
+  // Resolve product details from Postgres (validate they exist and are active)
   const resolvedItems = [];
   for (const item of items) {
     const productId = item.productId || item.id;
@@ -26,7 +32,7 @@ router.post("/", isAuthenticated, asyncRoute(async (req, res) => {
     let sku = item.sku || "";
 
     if (productId && isValidId(productId)) {
-      const prod = await Product.findById(productId).select("name price imageUrl sku status").lean();
+      const prod = await findProductById(productId);
       if (prod && prod.status !== "archived") {
         name = prod.name;
         unitPrice = prod.price;
@@ -48,35 +54,32 @@ router.post("/", isAuthenticated, asyncRoute(async (req, res) => {
     [req.user.firstName, req.user.lastName].filter(Boolean).join(" ") ||
     req.user.username || "Customer";
 
-  const order = await Order.create({
-    orderNumber: `HJ-${Date.now().toString().slice(-6)}`,
-    customerId: req.user._id,
-    customerName,
-    customerEmail: req.user.email,
-    items: resolvedItems,
+  const order = await createOrder({
+    order_number: generateOrderNumber(),
+    customer_id: req.user.id,
+    customer_name: customerName,
+    customer_email: req.user.email,
     subtotal,
     tax,
-    installationFee,
+    installation_fee: installationFee,
     total,
     status: "new",
-    paymentStatus: "pending",
-    installationPreference: delivery.installType || "full",
-    deliveryAddress: {
+    payment_status: "pending",
+    installation_preference: delivery.installType || "full",
+    delivery_address: {
       line1: delivery.address || customer.address || "",
       city: delivery.city || customer.city || "",
       country: delivery.country || customer.country || "UK",
     },
     notes: req.body.notes || "",
-  });
+  }, resolvedItems);
 
   return res.status(201).json({ success: true, order });
 }));
 
 // ── GET /api/orders/my — customer sees only their own orders ─────────────────
 router.get("/my", isAuthenticated, asyncRoute(async (req, res) => {
-  const orders = await Order.find({ customerId: req.user._id })
-    .sort({ createdAt: -1 })
-    .limit(50);
+  const orders = await listOrdersForCustomer(req.user.id, 50);
   return res.json({ success: true, orders, count: orders.length });
 }));
 
@@ -85,7 +88,7 @@ router.get("/:id", isAuthenticated, asyncRoute(async (req, res) => {
   if (!isValidId(req.params.id)) {
     return res.status(400).json({ success: false, message: "Invalid order id." });
   }
-  const order = await Order.findOne({ _id: req.params.id, customerId: req.user._id });
+  const order = await findOrderForCustomer(req.params.id, req.user.id);
   if (!order) return res.status(404).json({ success: false, message: "Order not found." });
   return res.json({ success: true, order });
 }));
@@ -95,14 +98,13 @@ router.patch("/:id/cancel", isAuthenticated, asyncRoute(async (req, res) => {
   if (!isValidId(req.params.id)) {
     return res.status(400).json({ success: false, message: "Invalid order id." });
   }
-  const order = await Order.findOne({ _id: req.params.id, customerId: req.user._id });
+  const order = await findOrderForCustomer(req.params.id, req.user.id);
   if (!order) return res.status(404).json({ success: false, message: "Order not found." });
   if (!["new", "confirmed"].includes(order.status)) {
     return res.status(409).json({ success: false, message: `Cannot cancel order in status: ${order.status}.` });
   }
-  order.status = "cancelled";
-  await order.save();
-  return res.json({ success: true, order, message: "Order cancelled." });
+  const cancelled = await cancelOrder(req.params.id);
+  return res.json({ success: true, order: cancelled, message: "Order cancelled." });
 }));
 
 export default router;

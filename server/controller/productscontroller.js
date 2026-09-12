@@ -1,7 +1,17 @@
 import asyncHandler from "express-async-handler";
 import { check, validationResult } from "express-validator";
-import Product from "../model/productsmodel.js";
-import User from "../model/usermodel.js";
+import {
+  listAllProductsRaw,
+  findProductById,
+  createProduct as createProductRow,
+  updateProduct as updateProductRow,
+  deleteProductById,
+  isInWishlist,
+  addToWishlist as addToWishlistRow,
+} from "../models-pg/products.js";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isValidId = (id) => typeof id === "string" && UUID_RE.test(id);
 
 // Validation middleware for product operations
 export const validateProduct = [
@@ -12,7 +22,7 @@ export const validateProduct = [
   check("images", "Images must be an array").isArray(),
 ];
 
-// Create Product (Admins & Employees Only)
+// Create Product (Admins & Employees Only) — legacy duplicate of adminProductController.js
 export const createProduct = asyncHandler(async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -20,30 +30,29 @@ export const createProduct = asyncHandler(async (req, res) => {
   }
 
   const { name, description, category, price, images } = req.body;
-  const newProduct = new Product({
-    name,
-    description,
-    category,
-    price,
-    images,
-    createdBy: req.user.id, // Captures the employee/admin who created the product
+  const newProduct = await createProductRow({
+    name, description, category, price,
+    images: Array.isArray(images) ? images : [],
+    stock: 0,
+    created_by: req.user?.id || null,
   });
 
-  await newProduct.save();
-  res
-    .status(201)
-    .json({ message: "Product created successfully", product: newProduct });
+  res.status(201).json({ message: "Product created successfully", product: newProduct });
 });
 
-// Get all products (Public Access)
+// Get all products (Public Access) — note: unlike the admin/public-catalog
+// endpoints, this legacy route returns every product regardless of status.
 export const getProducts = asyncHandler(async (req, res) => {
-  const products = await Product.find();
+  const products = await listAllProductsRaw();
   res.status(200).json({ count: products.length, data: products });
 });
 
 // Get single product by ID (Public Access)
 export const getProductById = asyncHandler(async (req, res) => {
-  const product = await Product.findById(req.params.id);
+  if (!isValidId(req.params.id)) {
+    return res.status(404).json({ message: "Product not found" });
+  }
+  const product = await findProductById(req.params.id);
   if (!product) {
     return res.status(404).json({ message: "Product not found" });
   }
@@ -56,25 +65,27 @@ export const updateProduct = asyncHandler(async (req, res) => {
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
+  if (!isValidId(req.params.id)) {
+    return res.status(404).json({ message: "Product not found" });
+  }
 
   const { name, description, category, price, images } = req.body;
-  const updatedProduct = await Product.findByIdAndUpdate(
-    req.params.id,
-    { name, description, category, price, images },
-    { new: true }
-  );
+  const updatedProduct = await updateProductRow(req.params.id, {
+    name, description, category, price, images,
+  });
 
   if (!updatedProduct) {
     return res.status(404).json({ message: "Product not found" });
   }
-  res
-    .status(200)
-    .json({ message: "Product updated successfully", product: updatedProduct });
+  res.status(200).json({ message: "Product updated successfully", product: updatedProduct });
 });
 
 // Delete product (Admins & Employees Only)
 export const deleteProduct = asyncHandler(async (req, res) => {
-  const deletedProduct = await Product.findByIdAndDelete(req.params.id);
+  if (!isValidId(req.params.id)) {
+    return res.status(404).json({ message: "Product not found" });
+  }
+  const deletedProduct = await deleteProductById(req.params.id);
   if (!deletedProduct) {
     return res.status(404).json({ message: "Product not found" });
   }
@@ -88,15 +99,13 @@ export const addToCart = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "Invalid product or quantity" });
   }
 
-  const product = await Product.findById(productId);
+  const product = await findProductById(productId);
   if (!product) {
     return res.status(404).json({ message: "Product not found" });
   }
 
   let cart = req.session.cart || [];
-  const existingItem = cart.find(
-    (item) => item.productId.toString() === productId
-  );
+  const existingItem = cart.find((item) => String(item.productId) === String(productId));
   if (existingItem) {
     existingItem.quantity += quantity;
   } else {
@@ -123,43 +132,35 @@ export const checkout = asyncHandler(async (req, res) => {
   res.status(200).json({ message: "Purchase successful" });
 });
 
-
-// ✅ Add to Wishlist Function
+// Add to Wishlist Function
 export const addToWishlist = async (req, res) => {
   try {
     const { productId } = req.body;
-    const userId = req.user?._id; // Ensure user is authenticated
+    const userId = req.user?.id; // Ensure user is authenticated
 
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized. Please log in." });
     }
+    if (!isValidId(productId)) {
+      return res.status(404).json({ message: "Product not found" });
+    }
 
-    // ✅ Check if Product Exists
-    const product = await Product.findById(productId);
+    const product = await findProductById(productId);
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    // ✅ Find User & Update Wishlist
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // ✅ Prevent Duplicate Wishlist Entries
-    if (user.wishlist.includes(productId)) {
+    if (await isInWishlist(userId, productId)) {
       return res.status(400).json({ message: "Product already in wishlist" });
     }
 
-    user.wishlist.push(productId);
-    await user.save();
+    await addToWishlistRow(userId, productId);
 
     return res.status(200).json({
       message: "Product added to wishlist successfully",
-      wishlist: user.wishlist,
     });
   } catch (error) {
-    console.error("❌ Error adding to wishlist:", error);
+    console.error("Error adding to wishlist:", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };

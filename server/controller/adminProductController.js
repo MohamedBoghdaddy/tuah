@@ -1,9 +1,18 @@
-import mongoose from "mongoose";
-import Product from "../model/productsmodel.js";
+import {
+  listAdminProducts,
+  findProductById,
+  createProduct as createProductRow,
+  updateProduct as updateProductRow,
+  archiveProduct as archiveProductRow,
+  updateProductStock as updateProductStockRow,
+  updateProductStatus as updateProductStatusRow,
+  ensureUniqueSlug,
+  listPublicProducts as listPublicProductsRows,
+  getPublicProductBySlugOrId as getPublicProductBySlugOrIdRow,
+} from "../models-pg/products.js";
 
-const PUBLIC_ACTIVE_FILTER = {
-  $or: [{ status: "active" }, { status: { $exists: false } }, { status: null }],
-};
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isValidId = (id) => typeof id === "string" && UUID_RE.test(id);
 
 const slugify = (value = "") =>
   String(value)
@@ -22,28 +31,37 @@ const numberOr = (value, fallback = 0) => {
 const sanitizeString = (value) =>
   typeof value === "string" ? value.trim() : value;
 
-const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
-
-const escapeRegExp = (value = "") =>
-  String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+// Maps the camelCase body fields this API has always accepted to the
+// snake_case columns in Postgres.
+const FIELD_MAP = {
+  name: "name",
+  slug: "slug",
+  description: "description",
+  category: "category",
+  collection: "collection",
+  sku: "sku",
+  material: "material",
+  color: "color",
+  room: "room",
+  useCase: "use_case",
+  dimensions: "dimensions",
+  price: "price",
+  discountPrice: "discount_price",
+  stock: "stock",
+  lowStockThreshold: "low_stock_threshold",
+  featured: "featured",
+  isFeatured: "featured",
+  status: "status",
+  images: "images",
+  tags: "tags",
+};
 
 const buildProductPayload = (body, { partial = false } = {}) => {
   const payload = {};
-  const stringFields = [
-    "name",
-    "description",
-    "category",
-    "collection",
-    "sku",
-    "material",
-    "color",
-    "room",
-    "useCase",
-    "dimensions",
-  ];
+  const stringFields = ["name", "description", "category", "collection", "sku", "material", "color", "room", "useCase", "dimensions"];
 
   stringFields.forEach((field) => {
-    if (body[field] !== undefined) payload[field] = sanitizeString(body[field]);
+    if (body[field] !== undefined) payload[FIELD_MAP[field]] = sanitizeString(body[field]);
   });
 
   if (body.slug !== undefined) payload.slug = slugify(body.slug);
@@ -52,7 +70,7 @@ const buildProductPayload = (body, { partial = false } = {}) => {
   if (payload.slug === "") delete payload.slug;
 
   ["price", "discountPrice", "stock", "lowStockThreshold"].forEach((field) => {
-    if (body[field] !== undefined) payload[field] = numberOr(body[field], field === "stock" ? 0 : null);
+    if (body[field] !== undefined) payload[FIELD_MAP[field]] = numberOr(body[field], field === "stock" ? 0 : null);
   });
 
   if (body.featured !== undefined) payload.featured = Boolean(body.featured);
@@ -62,10 +80,7 @@ const buildProductPayload = (body, { partial = false } = {}) => {
   if (Array.isArray(body.tags)) {
     payload.tags = body.tags.map(sanitizeString).filter(Boolean);
   } else if (typeof body.tags === "string") {
-    payload.tags = body.tags
-      .split(",")
-      .map((tag) => tag.trim())
-      .filter(Boolean);
+    payload.tags = body.tags.split(",").map((tag) => tag.trim()).filter(Boolean);
   }
 
   return payload;
@@ -73,8 +88,9 @@ const buildProductPayload = (body, { partial = false } = {}) => {
 
 const validateProductPayload = (payload, { partial = false } = {}) => {
   const required = ["name", "description", "category", "price", "stock"];
+  const bodyKeys = { name: payload.name, description: payload.description, category: payload.category, price: payload.price, stock: payload.stock };
   if (!partial) {
-    const missing = required.filter((field) => payload[field] === undefined || payload[field] === "");
+    const missing = required.filter((field) => bodyKeys[field] === undefined || bodyKeys[field] === "");
     if (missing.length) return `${missing.join(", ")} required.`;
   }
 
@@ -82,9 +98,9 @@ const validateProductPayload = (payload, { partial = false } = {}) => {
     return "Price must be a non-negative number.";
   }
   if (
-    payload.discountPrice !== undefined &&
-    payload.discountPrice !== null &&
-    (!Number.isFinite(payload.discountPrice) || payload.discountPrice < 0)
+    payload.discount_price !== undefined &&
+    payload.discount_price !== null &&
+    (!Number.isFinite(payload.discount_price) || payload.discount_price < 0)
   ) {
     return "Discount price must be a non-negative number.";
   }
@@ -92,9 +108,9 @@ const validateProductPayload = (payload, { partial = false } = {}) => {
     return "Stock must be a non-negative number.";
   }
   if (
-    payload.lowStockThreshold !== undefined &&
-    payload.lowStockThreshold !== null &&
-    (!Number.isFinite(payload.lowStockThreshold) || payload.lowStockThreshold < 0)
+    payload.low_stock_threshold !== undefined &&
+    payload.low_stock_threshold !== null &&
+    (!Number.isFinite(payload.low_stock_threshold) || payload.low_stock_threshold < 0)
   ) {
     return "Low stock threshold must be a non-negative number.";
   }
@@ -102,155 +118,19 @@ const validateProductPayload = (payload, { partial = false } = {}) => {
   return null;
 };
 
-const ensureUniqueSlug = async (baseSlug, existingId = null) => {
-  const fallback = baseSlug || `product-${Date.now()}`;
-  let candidate = fallback;
-  let suffix = 2;
-
-  while (
-    await Product.exists({
-      slug: candidate,
-      ...(existingId ? { _id: { $ne: existingId } } : {}),
-    })
-  ) {
-    candidate = `${fallback}-${suffix}`;
-    suffix += 1;
-  }
-
-  return candidate;
-};
-
 const handleDuplicate = (error, res) => {
-  if (error?.code !== 11000) return false;
-  const key = Object.keys(error.keyPattern || error.keyValue || {})[0] || "field";
-  res.status(409).json({
-    success: false,
-    message: `${key === "sku" ? "SKU" : "Slug"} must be unique.`,
-  });
+  if (error?.code !== "23505") return false;
+  res.status(409).json({ success: false, message: error.message });
   return true;
 };
 
-export const publicActiveProductFilter = PUBLIC_ACTIVE_FILTER;
-
-export const listPublicProducts = async (filters = {}) => {
-  const query = { ...PUBLIC_ACTIVE_FILTER };
-  const {
-    search,
-    q,
-    category,
-    collection,
-    minPrice,
-    maxPrice,
-    material,
-    color,
-    room,
-    useCase,
-    inStock,
-    sort = "newest",
-    page,
-    limit,
-  } = filters;
-  const searchText = String(search || q || "").trim();
-
-  const andFilters = [];
-
-  if (collection) {
-    const value = String(collection).trim();
-    const singular = value.replace(/s$/i, "");
-    const exact = new RegExp(`^${escapeRegExp(singular)}s?$`, "i");
-    andFilters.push({ $or: [{ collection: exact }, { category: exact }] });
-  }
-  if (category) query.category = new RegExp(`^${escapeRegExp(String(category).trim())}$`, "i");
-  if (material) query.material = new RegExp(`^${escapeRegExp(String(material).trim())}$`, "i");
-  if (color) query.color = new RegExp(`^${escapeRegExp(String(color).trim())}$`, "i");
-  if (room || useCase) {
-    const roomValue = String(room || useCase).trim();
-    const exact = new RegExp(`^${escapeRegExp(roomValue)}$`, "i");
-    andFilters.push({ $or: [{ room: exact }, { useCase: exact }] });
-  }
-  if (searchText) {
-    const fuzzy = new RegExp(escapeRegExp(searchText), "i");
-    andFilters.push({
-      $or: [
-        { name: fuzzy },
-        { description: fuzzy },
-        { category: fuzzy },
-        { collection: fuzzy },
-        { material: fuzzy },
-        { color: fuzzy },
-        { tags: fuzzy },
-      ],
-    });
-  }
-
-  if (andFilters.length) query.$and = andFilters;
-
-  const price = {};
-  const min = numberOr(minPrice, null);
-  const max = numberOr(maxPrice, null);
-  if (Number.isFinite(min) && min >= 0) price.$gte = min;
-  if (Number.isFinite(max) && max >= 0) price.$lte = max;
-  if (Object.keys(price).length) query.price = price;
-
-  if (String(inStock) === "true") query.stock = { $gt: 0 };
-  if (String(inStock) === "false") query.stock = { $lte: 0 };
-
-  const sortMap = {
-    newest: { featured: -1, createdAt: -1 },
-    price_asc: { price: 1, createdAt: -1 },
-    price_desc: { price: -1, createdAt: -1 },
-    name_asc: { name: 1 },
-    featured: { featured: -1, createdAt: -1 },
-  };
-  const sortSpec = sortMap[sort] || sortMap.newest;
-  const queryBuilder = Product.find(query).sort(sortSpec);
-
-  if (page || limit) {
-    const pageNumber = Math.max(1, Number(page) || 1);
-    const limitNumber = Math.min(100, Math.max(1, Number(limit) || 24));
-    queryBuilder.skip((pageNumber - 1) * limitNumber).limit(limitNumber);
-  }
-
-  return queryBuilder;
-};
-
-export const getPublicProductBySlugOrId = async (slugOrId) => {
-  const identity = isValidId(slugOrId) ? { _id: slugOrId } : { slug: slugOrId };
-  return Product.findOne({ ...identity, ...PUBLIC_ACTIVE_FILTER });
-};
+// Consumed by routes/commerceRoutes.js for the public storefront catalog.
+export const listPublicProducts = (filters) => listPublicProductsRows(filters);
+export const getPublicProductBySlugOrId = (slugOrId) => getPublicProductBySlugOrIdRow(slugOrId, { isValidId });
 
 export const getAdminProducts = async (req, res) => {
-  const {
-    status,
-    collection,
-    category,
-    q,
-    page = 1,
-    limit = 100,
-  } = req.query;
-  const filter = {};
-
-  if (status) filter.status = status;
-  if (collection) filter.collection = new RegExp(`^${String(collection).trim()}$`, "i");
-  if (category) filter.category = new RegExp(`^${String(category).trim()}$`, "i");
-  if (q) {
-    filter.$or = [
-      { name: new RegExp(String(q), "i") },
-      { sku: new RegExp(String(q), "i") },
-      { description: new RegExp(String(q), "i") },
-    ];
-  }
-
-  const pageNumber = Math.max(1, Number(page) || 1);
-  const limitNumber = Math.min(200, Math.max(1, Number(limit) || 100));
-  const [products, total] = await Promise.all([
-    Product.find(filter)
-      .sort({ createdAt: -1 })
-      .skip((pageNumber - 1) * limitNumber)
-      .limit(limitNumber),
-    Product.countDocuments(filter),
-  ]);
-
+  const { status, collection, category, q, page = 1, limit = 100 } = req.query;
+  const { products, total } = await listAdminProducts({ status, collection, category, q, page, limit });
   return res.json({ success: true, count: products.length, total, products });
 };
 
@@ -259,7 +139,7 @@ export const getAdminProduct = async (req, res) => {
     return res.status(400).json({ success: false, message: "Invalid product id." });
   }
 
-  const product = await Product.findById(req.params.id);
+  const product = await findProductById(req.params.id);
   if (!product) return res.status(404).json({ success: false, message: "Product not found." });
   return res.json({ success: true, product });
 };
@@ -272,9 +152,9 @@ export const createAdminProduct = async (req, res) => {
 
     payload.slug = await ensureUniqueSlug(payload.slug || slugify(payload.name));
     if (payload.sku) payload.sku = payload.sku.toUpperCase();
-    if (req.user?._id) payload.createdBy = req.user._id;
+    if (req.user?.id) payload.created_by = req.user.id;
 
-    const product = await Product.create(payload);
+    const product = await createProductRow(payload);
     return res.status(201).json({ success: true, product });
   } catch (error) {
     if (handleDuplicate(error, res)) return;
@@ -299,10 +179,7 @@ export const updateAdminProduct = async (req, res) => {
     }
     if (payload.sku) payload.sku = payload.sku.toUpperCase();
 
-    const product = await Product.findByIdAndUpdate(req.params.id, payload, {
-      new: true,
-      runValidators: true,
-    });
+    const product = await updateProductRow(req.params.id, payload);
     if (!product) return res.status(404).json({ success: false, message: "Product not found." });
     return res.json({ success: true, product });
   } catch (error) {
@@ -316,11 +193,7 @@ export const archiveAdminProduct = async (req, res) => {
     return res.status(400).json({ success: false, message: "Invalid product id." });
   }
 
-  const product = await Product.findByIdAndUpdate(
-    req.params.id,
-    { status: "archived" },
-    { new: true }
-  );
+  const product = await archiveProductRow(req.params.id);
   if (!product) return res.status(404).json({ success: false, message: "Product not found." });
   return res.json({ success: true, product, message: "Product archived." });
 };
@@ -334,7 +207,7 @@ export const updateAdminProductStock = async (req, res) => {
     return res.status(400).json({ success: false, message: "Stock must be a non-negative number." });
   }
 
-  const product = await Product.findByIdAndUpdate(req.params.id, { stock }, { new: true });
+  const product = await updateProductStockRow(req.params.id, stock);
   if (!product) return res.status(404).json({ success: false, message: "Product not found." });
   return res.json({ success: true, product });
 };
@@ -349,7 +222,7 @@ export const updateAdminProductStatus = async (req, res) => {
     return res.status(400).json({ success: false, message: "Invalid product status." });
   }
 
-  const product = await Product.findByIdAndUpdate(req.params.id, { status }, { new: true });
+  const product = await updateProductStatusRow(req.params.id, status);
   if (!product) return res.status(404).json({ success: false, message: "Product not found." });
   return res.json({ success: true, product });
 };

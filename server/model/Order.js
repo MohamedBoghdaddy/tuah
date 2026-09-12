@@ -2,7 +2,9 @@ import mongoose from "mongoose";
 
 const orderItemSchema = new mongoose.Schema(
   {
-    productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", default: null },
+    // Postgres UUID (products now live in Supabase Postgres, not this DB) —
+    // plain String rather than ObjectId so Mongoose doesn't try to cast it.
+    productId: { type: String, default: null },
     name: { type: String, required: true, trim: true },
     quantity: { type: Number, required: true, min: 1, default: 1 },
     unitPrice: { type: Number, required: true, min: 0, default: 0 },
@@ -16,7 +18,9 @@ const orderItemSchema = new mongoose.Schema(
 const orderSchema = new mongoose.Schema(
   {
     orderNumber: { type: String, required: true, trim: true },
-    customerId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+    // Postgres UUID (users now live in Supabase Postgres, not this DB) —
+    // plain String rather than ObjectId so Mongoose doesn't try to cast it.
+    customerId: { type: String, default: null },
     customerName: { type: String, trim: true, default: "" },
     customerEmail: { type: String, lowercase: true, trim: true, default: "" },
 
@@ -40,7 +44,8 @@ const orderSchema = new mongoose.Schema(
       default: "pending",
     },
 
-    assignedEmployeeId: { type: mongoose.Schema.Types.ObjectId, ref: "Employee", default: null },
+    // Postgres UUID (employees now live in Supabase Postgres, not this DB).
+    assignedEmployeeId: { type: String, default: null },
     assignedEmployeeName: { type: String, default: "" },
 
     deliveryAddress: {

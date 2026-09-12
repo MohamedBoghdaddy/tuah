@@ -2,9 +2,10 @@ import mongoose from "mongoose";
 
 const CartItemSchema = new mongoose.Schema(
   {
+    // Postgres UUID (products now live in Supabase Postgres, not this DB) —
+    // plain String rather than ObjectId so Mongoose doesn't try to cast it.
     productId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Product",
+      type: String,
       required: true,
     },
     quantity: {
@@ -23,9 +24,10 @@ const CartItemSchema = new mongoose.Schema(
 
 const CartSchema = new mongoose.Schema(
   {
+    // Postgres UUID (users now live in Supabase Postgres, not this DB) —
+    // plain String rather than ObjectId so Mongoose doesn't try to cast it.
     userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      type: String,
       required: true,
       unique: true,
       index: true,

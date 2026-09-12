@@ -1,13 +1,22 @@
-import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import mongoose from "mongoose";
 import multer from "multer";
 import path from "path";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import { performance } from "node:perf_hooks";
-import User from "../model/usermodel.js";
+import {
+  isUsersDbReady,
+  findUserByEmailOrUsername,
+  findUserByEmail,
+  findUserById,
+  listUsers,
+  searchUsersByUsername,
+  createUser,
+  updateUser as updateUserRow,
+  deleteUser as deleteUserRow,
+  verifyUserPassword,
+} from "../models-pg/users.js";
 
 dotenv.config();
 
@@ -17,6 +26,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "tuah-demo-jwt-secret";
 const isProduction = process.env.NODE_ENV === "production";
 const DEBUG_AUTH_TIMING = process.env.DEBUG_AUTH_TIMING === "true";
 const USER_ROLES = ["customer", "employee", "admin"];
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const startAuthTimer = (label) => {
   if (!DEBUG_AUTH_TIMING) return () => {};
@@ -27,10 +37,8 @@ const startAuthTimer = (label) => {
   };
 };
 
-const isDatabaseReady = () => mongoose.connection.readyState === 1;
-
 const requireAuthDatabase = (res) => {
-  if (isDatabaseReady()) return true;
+  if (isUsersDbReady()) return true;
 
   res.status(503).json({
     success: false,
@@ -39,13 +47,11 @@ const requireAuthDatabase = (res) => {
   return false;
 };
 
-const publicUserFields = "-password -__v";
-
 const toPublicUser = (user) => ({
-  _id: user._id,
-  id: user._id,
+  _id: user.id,
+  id: user.id,
   name:
-    [user.firstName, user.middleName, user.lastName]
+    [user.first_name, user.middle_name, user.last_name]
       .filter(Boolean)
       .join(" ")
       .trim() || user.username,
@@ -53,27 +59,27 @@ const toPublicUser = (user) => ({
   email: user.email,
   role: user.role,
   gender: user.gender,
-  firstName: user.firstName,
-  middleName: user.middleName,
-  lastName: user.lastName,
+  firstName: user.first_name,
+  middleName: user.middle_name,
+  lastName: user.last_name,
   department: user.department,
-  receiveNotifications: user.receiveNotifications,
-  profilePhoto: user.profilePhoto,
-  profilePhotoUrl: user.profilePhotoUrl,
-  profilePhotoAssetId: user.profilePhotoAssetId,
-  jobTitle: user.jobTitle,
-  seniorityLevel: user.seniorityLevel,
+  receiveNotifications: user.receive_notifications,
+  profilePhoto: user.profile_photo,
+  profilePhotoUrl: user.profile_photo_url,
+  profilePhotoAssetId: user.profile_photo_asset_id,
+  jobTitle: user.job_title,
+  seniorityLevel: user.seniority_level,
   phone: user.phone,
   status: user.status,
-  invitedAt: user.invitedAt,
-  invitationEmailStatus: user.invitationEmailStatus,
-  invitationEmailOutboxId: user.invitationEmailOutboxId,
-  employeeId: user.employeeId || null,
-  managerId: user.managerId || null,
+  invitedAt: user.invited_at,
+  invitationEmailStatus: user.invitation_email_status,
+  invitationEmailOutboxId: user.invitation_email_outbox_id,
+  employeeId: user.employee_id || null,
+  managerId: user.manager_id || null,
   permissions: user.permissions || [],
-  deniedPermissions: user.deniedPermissions || [],
-  createdAt: user.createdAt,
-  updatedAt: user.updatedAt,
+  deniedPermissions: user.denied_permissions || [],
+  createdAt: user.created_at,
+  updatedAt: user.updated_at,
 });
 
 const getTokenFromRequest = (req) => {
@@ -87,10 +93,10 @@ const getTokenFromRequest = (req) => {
 
 const getRequestedUserId = (req) => req.params.id || req.params.userId;
 
-const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
+const isValidUserId = (id) => typeof id === "string" && UUID_RE.test(id);
 
 const createToken = (user) =>
-  jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: "30d" });
+  jwt.sign({ id: user.id, role: user.role, actorType: "user" }, JWT_SECRET, { expiresIn: "30d" });
 
 const authCookieOptions = {
   httpOnly: true,
@@ -137,8 +143,9 @@ export const registerUser = async (req, res) => {
   try {
     const normalizedEmail = String(email).trim().toLowerCase();
     const normalizedUsername = String(username).trim();
-    const existingUser = await User.findOne({
-      $or: [{ email: normalizedEmail }, { username: normalizedUsername }],
+    const existingUser = await findUserByEmailOrUsername({
+      email: normalizedEmail,
+      username: normalizedUsername,
     });
     if (existingUser) {
       const message =
@@ -148,17 +155,15 @@ export const registerUser = async (req, res) => {
       return res.status(400).json({ message });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({
+    const user = await createUser({
       username: normalizedUsername,
       email: normalizedEmail,
-      password: hashedPassword,
-      firstName,
-      middleName,
-      lastName,
+      password,
+      first_name: firstName,
+      middle_name: middleName,
+      last_name: lastName,
       gender,
     });
-    await user.save();
 
     const token = createToken(user);
     setAuthCookie(res, token);
@@ -185,7 +190,7 @@ export const loginUser = async (req, res) => {
     let user;
     const endFindTimer = startAuthTimer("login-db-user-find");
     try {
-      user = await User.findOne({ email: normalizedEmail });
+      user = await findUserByEmail(normalizedEmail);
     } finally {
       endFindTimer();
     }
@@ -194,7 +199,7 @@ export const loginUser = async (req, res) => {
     let isMatch;
     const endBcryptTimer = startAuthTimer("login-bcrypt-compare");
     try {
-      isMatch = await bcrypt.compare(password, user.password);
+      isMatch = await verifyUserPassword(user, password);
     } finally {
       endBcryptTimer();
     }
@@ -231,7 +236,7 @@ export const getAllUsers = async (req, res) => {
   if (!requireAuthDatabase(res)) return;
 
   try {
-    const users = await User.find().select(publicUserFields).sort({ createdAt: -1 });
+    const users = await listUsers();
     res.status(200).json(users.map(toPublicUser));
   } catch (error) {
     console.error("Error fetching users:", error);
@@ -243,7 +248,7 @@ export const getUser = async (req, res) => {
   if (!requireAuthDatabase(res)) return;
 
   const userId = getRequestedUserId(req);
-  if (!isValidObjectId(userId)) {
+  if (!isValidUserId(userId)) {
     return res.status(400).json({
       success: false,
       message: "Invalid user id",
@@ -251,7 +256,7 @@ export const getUser = async (req, res) => {
   }
 
   try {
-    const user = await User.findById(userId).select(publicUserFields);
+    const user = await findUserById(userId);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -266,26 +271,60 @@ export const getUser = async (req, res) => {
   }
 };
 
+// Maps the camelCase fields this API has always accepted in req.body to the
+// snake_case columns in Postgres. Unknown keys are dropped rather than passed
+// through, since Postgres (unlike Mongoose) has no schema-less passthrough.
+const USER_UPDATE_FIELD_MAP = {
+  username: "username",
+  email: "email",
+  password: "password",
+  gender: "gender",
+  firstName: "first_name",
+  middleName: "middle_name",
+  lastName: "last_name",
+  role: "role",
+  permissions: "permissions",
+  deniedPermissions: "denied_permissions",
+  department: "department",
+  managerId: "manager_id",
+  employeeId: "employee_id",
+  level: "level",
+  receiveNotifications: "receive_notifications",
+  profilePhoto: "profile_photo",
+  profilePhotoUrl: "profile_photo_url",
+  profilePhotoAssetId: "profile_photo_asset_id",
+  jobTitle: "job_title",
+  seniorityLevel: "seniority_level",
+  phone: "phone",
+  status: "status",
+};
+
+const toUserUpdatePayload = (body) => {
+  const payload = {};
+  Object.entries(USER_UPDATE_FIELD_MAP).forEach(([bodyKey, column]) => {
+    if (body[bodyKey] !== undefined) payload[column] = body[bodyKey];
+  });
+  return payload;
+};
+
 export const updateUser = async (req, res) => {
   if (!requireAuthDatabase(res)) return;
 
   try {
     const userId = getRequestedUserId(req);
-    if (!isValidObjectId(userId)) {
+    if (!isValidUserId(userId)) {
       return res.status(400).json({
         success: false,
         message: "Invalid user id",
       });
     }
 
-    const updates = { ...req.body };
+    const updates = toUserUpdatePayload(req.body);
     if (req.file) {
-      updates.profilePhoto = `/uploads/${req.file.filename}`;
+      updates.profile_photo = `/uploads/${req.file.filename}`;
     }
 
-    const updatedUser = await User.findByIdAndUpdate(userId, updates, {
-      new: true,
-    }).select(publicUserFields);
+    const updatedUser = await updateUserRow(userId, updates);
     if (!updatedUser) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -298,6 +337,9 @@ export const updateUser = async (req, res) => {
       });
   } catch (error) {
     console.error("Error updating user:", error);
+    if (error.code === "23505") {
+      return res.status(409).json({ message: error.message });
+    }
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -307,14 +349,14 @@ export const deleteUser = async (req, res) => {
 
   try {
     const userId = getRequestedUserId(req);
-    if (!isValidObjectId(userId)) {
+    if (!isValidUserId(userId)) {
       return res.status(400).json({
         success: false,
         message: "Invalid user id",
       });
     }
 
-    const user = await User.findByIdAndDelete(userId);
+    const user = await deleteUserRow(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
     res.status(200).json({ message: "User deleted successfully" });
   } catch (error) {
@@ -332,9 +374,7 @@ export const searchUsers = async (req, res) => {
       return res.status(400).json({ message: "Username required" });
     }
 
-    const users = await User.find({
-      username: { $regex: username, $options: "i" },
-    }).select(publicUserFields);
+    const users = await searchUsersByUsername(username);
     if (!users.length) {
       return res.status(404).json({ message: "No users found" });
     }
@@ -353,7 +393,7 @@ export const checkAuth = async (req, res) => {
     if (!token) return res.status(401).json({ message: "Not authenticated" });
 
     const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await User.findById(decoded.id).select(publicUserFields);
+    const user = await findUserById(decoded.id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
     res.status(200).json({ user: toPublicUser(user) });
@@ -374,10 +414,7 @@ export const getUsersByRole = async (req, res) => {
       });
     }
 
-    const filter = role ? { role } : {};
-    const users = await User.find(filter)
-      .select(publicUserFields)
-      .sort({ createdAt: -1 });
+    const users = await listUsers({ role });
 
     res.status(200).json({ success: true, users: users.map(toPublicUser) });
   } catch (error) {

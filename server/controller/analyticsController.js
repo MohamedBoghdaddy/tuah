@@ -1,16 +1,29 @@
 import mongoose from "mongoose";
-import Product from "../model/productsmodel.js";
 import User from "../model/usermodel.js";
 import Lead from "../model/Lead.js";
 import Quote from "../model/Quote.js";
-import Order from "../model/Order.js";
 import ApprovalRequest from "../model/ApprovalRequest.js";
+import { isSupabaseConfigured } from "../config/supabase.js";
+import { countActiveProducts, countLowStockActiveProducts, listLowStockActiveProducts } from "../models-pg/products.js";
+import {
+  countOrdersExcludingStatus,
+  listRecentOrdersExcludingStatus,
+  listOrdersForExportExcludingStatus,
+  sumOrderTotalsExcludingStatus,
+  countOrdersByStatusGroup,
+  groupMonthlyOrderTotals,
+  groupCategoryRevenue,
+  groupTopProductsByRevenue,
+} from "../models-pg/orders.js";
 
 // ─── Shared helper ────────────────────────────────────────────────────────────
 const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const nMonthsAgo = (n) => { const d = new Date(); d.setMonth(d.getMonth() - n); return d; };
 
-const isDbConnected = () => mongoose.connection.readyState === 1;
+// Orders/Products/Users now live in Postgres; Leads/Quotes/Approvals are
+// still MongoDB (not yet migrated) — these dashboards blend both, so both
+// databases need to be up for a complete result.
+const isDbConnected = () => mongoose.connection.readyState === 1 && isSupabaseConfigured();
 
 // ─── GET /api/analytics ───────────────────────────────────────────────────────
 // Kept for backward compat — public-safe subset of dashboard summary.
@@ -21,25 +34,20 @@ export const Analytics = async (req, res) => {
     }
 
     const [totalOrders, totalCustomers, totalProducts, lowStock] = await Promise.all([
-      Order.countDocuments({ status: { $ne: "cancelled" } }),
+      countOrdersExcludingStatus("cancelled"),
       User.countDocuments({ role: "customer" }),
-      Product.countDocuments({ status: "active" }),
-      Product.countDocuments({ status: "active", $expr: { $lte: ["$stock", "$lowStockThreshold"] } }),
+      countActiveProducts(),
+      countLowStockActiveProducts(),
     ]);
 
     // Monthly order totals for the last 6 months
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
-    const monthlyOrders = await Order.aggregate([
-      { $match: { createdAt: { $gte: sixMonthsAgo }, status: { $ne: "cancelled" } } },
-      { $group: { _id: { $month: "$createdAt" }, revenue: { $sum: "$total" }, count: { $sum: 1 } } },
-      { $sort: { "_id": 1 } },
-    ]);
+    const monthlyOrders = await groupMonthlyOrderTotals(sixMonthsAgo);
 
-    const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
     const salesTrend = monthlyOrders.map((m) => Math.round(m.revenue));
-    const salesMonths = monthlyOrders.map((m) => monthNames[(m._id - 1) % 12]);
+    const salesMonths = monthlyOrders.map((m) => MONTH_NAMES[(m._id - 1) % 12]);
     const totalSales = salesTrend.reduce((s, v) => s + v, 0);
 
     return res.json({
@@ -78,34 +86,22 @@ export const getDashboardSummary = async (req, res) => {
       recentLeads,
       monthlyRevenue,
     ] = await Promise.all([
-      Order.countDocuments({ status: { $ne: "cancelled" } }),
+      countOrdersExcludingStatus("cancelled"),
       User.countDocuments({ role: "customer" }),
       Quote.countDocuments({ status: { $in: ["draft", "pending", "sent"] } }),
       ApprovalRequest.countDocuments({ status: "pending" }),
-      Product.find({ status: "active", $expr: { $lte: ["$stock", { $ifNull: ["$lowStockThreshold", 5] }] } })
-        .select("name stock lowStockThreshold imageUrl category")
-        .limit(5)
-        .lean(),
-      Order.find({ status: { $ne: "cancelled" } })
-        .sort({ createdAt: -1 })
-        .limit(5)
-        .select("orderNumber customerName total status createdAt")
-        .lean(),
+      listLowStockActiveProducts(5),
+      listRecentOrdersExcludingStatus("cancelled", 5),
       Lead.find({ status: { $nin: ["won", "lost", "archived"] } })
         .sort({ createdAt: -1 })
         .limit(5)
         .select("name company status priority estimatedValue createdAt")
         .lean(),
-      Order.aggregate([
-        { $match: { createdAt: { $gte: sixMonthsAgo }, status: { $ne: "cancelled" } } },
-        { $group: { _id: { $month: "$createdAt" }, revenue: { $sum: "$total" }, count: { $sum: 1 } } },
-        { $sort: { "_id": 1 } },
-      ]),
+      groupMonthlyOrderTotals(sixMonthsAgo),
     ]);
 
-    const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
     const salesTrend = monthlyRevenue.map((m) => Math.round(m.revenue));
-    const salesMonths = monthlyRevenue.map((m) => monthNames[(m._id - 1) % 12]);
+    const salesMonths = monthlyRevenue.map((m) => MONTH_NAMES[(m._id - 1) % 12]);
     const totalSales = salesTrend.reduce((s, v) => s + v, 0);
 
     // Integration health alerts
@@ -155,57 +151,21 @@ export const getAnalyticsOverview = async (req, res) => {
       categoryRevenue,
       topProducts,
       orderStatusCounts,
-      totalRevenue,
+      totalSales,
       totalOrders,
       totalCustomers,
       lowStockCount,
       leadConversion,
       quoteConversion,
     ] = await Promise.all([
-      // Monthly revenue trend
-      Order.aggregate([
-        { $match: { createdAt: { $gte: since }, status: { $ne: "cancelled" } } },
-        { $group: { _id: { $month: "$createdAt" }, revenue: { $sum: "$total" }, count: { $sum: 1 } } },
-        { $sort: { _id: 1 } },
-      ]),
-
-      // Revenue by product category (from order items)
-      Order.aggregate([
-        { $match: { status: { $ne: "cancelled" } } },
-        { $unwind: "$items" },
-        { $lookup: { from: "products", localField: "items.productId", foreignField: "_id", as: "prod" } },
-        { $unwind: { path: "$prod", preserveNullAndEmptyArrays: true } },
-        { $group: {
-          _id: { $ifNull: ["$prod.category", "Uncategorised"] },
-          revenue: { $sum: "$items.total" },
-          unitsSold: { $sum: "$items.quantity" },
-        }},
-        { $sort: { revenue: -1 } },
-        { $limit: 8 },
-      ]),
-
-      // Top products by revenue
-      Order.aggregate([
-        { $match: { status: { $ne: "cancelled" } } },
-        { $unwind: "$items" },
-        { $group: {
-          _id: "$items.name",
-          revenue: { $sum: "$items.total" },
-          unitsSold: { $sum: "$items.quantity" },
-        }},
-        { $sort: { revenue: -1 } },
-        { $limit: 6 },
-      ]),
-
-      // Orders by status
-      Order.aggregate([
-        { $group: { _id: "$status", count: { $sum: 1 } } },
-      ]),
-
-      Order.aggregate([{ $match: { status: { $ne: "cancelled" } } }, { $group: { _id: null, total: { $sum: "$total" } } }]),
-      Order.countDocuments({ status: { $ne: "cancelled" } }),
+      groupMonthlyOrderTotals(since),
+      groupCategoryRevenue(8),
+      groupTopProductsByRevenue(6),
+      countOrdersByStatusGroup(),
+      sumOrderTotalsExcludingStatus("cancelled"),
+      countOrdersExcludingStatus("cancelled"),
       User.countDocuments({ role: "customer" }),
-      Product.countDocuments({ status: "active", $expr: { $lte: ["$stock", { $ifNull: ["$lowStockThreshold", 5] }] } }),
+      countLowStockActiveProducts(),
 
       // Lead conversion (won/total non-archived)
       Promise.all([
@@ -220,7 +180,6 @@ export const getAnalyticsOverview = async (req, res) => {
       ]),
     ]);
 
-    const totalSales = totalRevenue[0]?.total || 0;
     const avgOrderValue = totalOrders > 0 ? Math.round(totalSales / totalOrders) : 0;
 
     const maxCatRevenue = Math.max(...categoryRevenue.map((c) => c.revenue), 1);
@@ -275,10 +234,7 @@ export const exportAnalyticsCSV = async (req, res) => {
   try {
     if (!isDbConnected()) return res.status(503).json({ success: false, message: "Database unavailable." });
 
-    const orders = await Order.find({ status: { $ne: "cancelled" } })
-      .sort({ createdAt: -1 })
-      .limit(500)
-      .lean();
+    const orders = await listOrdersForExportExcludingStatus("cancelled", 500);
 
     const header = ["orderNumber", "customerName", "status", "paymentStatus", "subtotal", "tax", "installationFee", "total", "createdAt"];
     const rows = orders.map((o) => [

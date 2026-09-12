@@ -1,7 +1,14 @@
-import mongoose from "mongoose";
-import Product from "../model/productsmodel.js";
-import User from "../model/usermodel.js";
-import Employee from "../model/employeemodel.js";
+import { updateUser as updateUserRow } from "../models-pg/users.js";
+import {
+  findEmployeeById,
+  updateEmployee as updateEmployeeRow,
+  createEmployee as createEmployeeRow,
+} from "../models-pg/employees.js";
+import {
+  findProductById,
+  updateProduct as updateProductRow,
+  addGalleryImages,
+} from "../models-pg/products.js";
 import {
   uploadBufferToSupabase,
   deleteSupabaseFile,
@@ -20,6 +27,9 @@ const supabaseMissing = (res) =>
 const invalidId = (res) =>
   res.status(400).json({ success: false, message: "Invalid ID format." });
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isValidUuid = (id) => typeof id === "string" && UUID_RE.test(id);
+
 const getBucketEnv = (type) => {
   const map = {
     product: process.env.SUPABASE_PRODUCT_IMAGES_BUCKET || "product-images",
@@ -35,13 +45,13 @@ export const uploadProductImage = async (req, res) => {
   if (!isSupabaseConfigured()) return supabaseMissing(res);
 
   const { productId } = req.params;
-  if (!mongoose.isValidObjectId(productId)) return invalidId(res);
+  if (!isValidUuid(productId)) return invalidId(res);
 
   if (!req.file) {
     return res.status(400).json({ success: false, message: "No image file provided." });
   }
 
-  const product = await Product.findById(productId);
+  const product = await findProductById(productId);
   if (!product) {
     return res.status(404).json({ success: false, message: "Product not found." });
   }
@@ -62,7 +72,7 @@ export const uploadProductImage = async (req, res) => {
   }
 
   const assetRow = await saveImageAssetMetadata({
-    mongoOwnerId: (req.employee?._id || req.user?._id)?.toString(),
+    mongoOwnerId: req.employee?.id || req.user?.id,
     relatedEntityType: "product",
     relatedEntityId: productId,
     bucket,
@@ -77,19 +87,20 @@ export const uploadProductImage = async (req, res) => {
   // (storage path is globally unique within the bucket and serves as a stable asset ref)
   const imageAssetId = assetRow?.id || `${bucket}:${uploadResult.path}`;
 
+  let updatedProduct;
   try {
-    product.imageUrl = uploadResult.publicUrl;
-    product.imageAssetId = imageAssetId;
-    await product.save();
+    updatedProduct = await updateProductRow(productId, {
+      image_url: uploadResult.publicUrl,
+      image_asset_id: imageAssetId,
+    });
   } catch (saveErr) {
-    // Mongo update failed – roll back Supabase upload (best-effort)
     await deleteSupabaseFile({ bucket, path: uploadResult.path }).catch(() => {});
     return res
       .status(500)
-      .json({ success: false, message: "Image uploaded but failed to update product in MongoDB. Upload rolled back." });
+      .json({ success: false, message: "Image uploaded but failed to update product. Upload rolled back." });
   }
 
-  return res.status(200).json({ success: true, product, imageUrl: uploadResult.publicUrl, imageAssetId });
+  return res.status(200).json({ success: true, product: updatedProduct, imageUrl: uploadResult.publicUrl, imageAssetId });
 };
 
 // ─── POST /api/admin/products/:productId/gallery ──────────────────────────────────
@@ -98,13 +109,13 @@ export const uploadProductGallery = async (req, res) => {
   if (!isSupabaseConfigured()) return supabaseMissing(res);
 
   const { productId } = req.params;
-  if (!mongoose.isValidObjectId(productId)) return invalidId(res);
+  if (!isValidUuid(productId)) return invalidId(res);
 
   if (!req.files || req.files.length === 0) {
     return res.status(400).json({ success: false, message: "No image files provided." });
   }
 
-  const product = await Product.findById(productId);
+  const product = await findProductById(productId);
   if (!product) return res.status(404).json({ success: false, message: "Product not found." });
 
   const bucket = getBucketEnv("product");
@@ -141,10 +152,9 @@ export const uploadProductGallery = async (req, res) => {
     return res.status(500).json({ success: false, message: "All gallery uploads failed." });
   }
 
-  product.galleryImages = [...(product.galleryImages || []), ...uploaded];
-  await product.save();
+  const updatedProduct = await addGalleryImages(productId, uploaded);
 
-  return res.status(200).json({ success: true, product, uploaded });
+  return res.status(200).json({ success: true, product: updatedProduct, uploaded });
 };
 
 // ─── POST /api/users/me/profile-photo ────────────────────────────────────────────
@@ -156,7 +166,7 @@ export const uploadUserProfilePhoto = async (req, res) => {
     return res.status(400).json({ success: false, message: "No image file provided." });
   }
 
-  const userId = req.user._id.toString();
+  const userId = req.user.id;
   const bucket = getBucketEnv("user");
   const storagePath = buildStoragePath("user", userId, req.file.originalname);
 
@@ -185,21 +195,17 @@ export const uploadUserProfilePhoto = async (req, res) => {
   });
 
   try {
-    const user = await User.findByIdAndUpdate(
-      userId,
-      {
-        profilePhotoUrl: uploadResult.publicUrl,
-        profilePhotoAssetId: assetRow?.id || `${bucket}:${uploadResult.path}`,
-      },
-      { new: true }
-    ).select("-password -__v");
+    const user = await updateUserRow(userId, {
+      profile_photo_url: uploadResult.publicUrl,
+      profile_photo_asset_id: assetRow?.id || `${bucket}:${uploadResult.path}`,
+    });
 
     return res.status(200).json({ success: true, user, photoUrl: uploadResult.publicUrl });
   } catch (saveErr) {
     await deleteSupabaseFile({ bucket, path: uploadResult.path }).catch(() => {});
     return res.status(500).json({
       success: false,
-      message: "Photo uploaded but failed to update user in MongoDB. Upload rolled back.",
+      message: "Photo uploaded but failed to update user. Upload rolled back.",
     });
   }
 };
@@ -210,13 +216,13 @@ export const uploadEmployeeProfilePhoto = async (req, res) => {
   if (!isSupabaseConfigured()) return supabaseMissing(res);
 
   const { employeeId } = req.params;
-  if (!mongoose.isValidObjectId(employeeId)) return invalidId(res);
+  if (!isValidUuid(employeeId)) return invalidId(res);
 
   if (!req.file) {
     return res.status(400).json({ success: false, message: "No image file provided." });
   }
 
-  const employee = await Employee.findById(employeeId);
+  const employee = await findEmployeeById(employeeId);
   if (!employee) return res.status(404).json({ success: false, message: "Employee not found." });
 
   const bucket = getBucketEnv("employee");
@@ -247,15 +253,16 @@ export const uploadEmployeeProfilePhoto = async (req, res) => {
   });
 
   try {
-    employee.profilePhotoUrl = uploadResult.publicUrl;
-    employee.profilePhotoAssetId = assetRow?.id || `${bucket}:${uploadResult.path}`;
-    await employee.save();
-    return res.status(200).json({ success: true, employee, photoUrl: uploadResult.publicUrl });
+    const updatedEmployee = await updateEmployeeRow(employeeId, {
+      profile_photo_url: uploadResult.publicUrl,
+      profile_photo_asset_id: assetRow?.id || `${bucket}:${uploadResult.path}`,
+    });
+    return res.status(200).json({ success: true, employee: updatedEmployee, photoUrl: uploadResult.publicUrl });
   } catch (saveErr) {
     await deleteSupabaseFile({ bucket, path: uploadResult.path }).catch(() => {});
     return res.status(500).json({
       success: false,
-      message: "Photo uploaded but failed to update employee in MongoDB. Upload rolled back.",
+      message: "Photo uploaded but failed to update employee. Upload rolled back.",
     });
   }
 };
@@ -266,9 +273,9 @@ export const uploadEmployeeProfilePhoto = async (req, res) => {
 
 export const sendEmployeeInvite = async (req, res) => {
   const { employeeId } = req.params;
-  if (!mongoose.isValidObjectId(employeeId)) return invalidId(res);
+  if (!isValidUuid(employeeId)) return invalidId(res);
 
-  const employee = await Employee.findById(employeeId);
+  const employee = await findEmployeeById(employeeId);
   if (!employee) return res.status(404).json({ success: false, message: "Employee not found." });
 
   const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
@@ -284,10 +291,10 @@ export const sendEmployeeInvite = async (req, res) => {
         {
           redirectTo,
           data: {
-            mongoEmployeeId: employee._id.toString(),
+            employeeId: employee.id,
             role: employee.role,
             department: employee.department,
-            jobTitle: employee.jobTitle || "",
+            jobTitle: employee.job_title || "",
           },
         }
       );
@@ -298,12 +305,11 @@ export const sendEmployeeInvite = async (req, res) => {
         // intentional fall-through (no return)
       } else {
         // Supabase Auth invite sent successfully — store supabase user id and return.
-        employee.invitationEmailStatus = "sent";
-        employee.invitedAt = new Date();
-        if (authData?.user?.id) {
-          employee.supabaseAuthUserId = authData.user.id;
-        }
-        await employee.save();
+        const updated = await updateEmployeeRow(employee.id, {
+          invitation_email_status: "sent",
+          invited_at: new Date().toISOString(),
+          ...(authData?.user?.id ? { supabase_auth_user_id: authData.user.id } : {}),
+        });
 
         return res.status(200).json({
           success: true,
@@ -311,10 +317,10 @@ export const sendEmployeeInvite = async (req, res) => {
           message: "Invitation email sent via Supabase Auth.",
           inviteMethod: "supabase_auth",
           employee: {
-            _id: employee._id,
-            email: employee.email,
+            _id: updated.id,
+            email: updated.email,
             invitationEmailStatus: "sent",
-            supabaseAuthUserId: employee.supabaseAuthUserId || null,
+            supabaseAuthUserId: updated.supabase_auth_user_id || null,
           },
         });
       }
@@ -339,10 +345,11 @@ export const sendEmployeeInvite = async (req, res) => {
   const invStatusMap = { sent: "sent", failed: "failed", queued: "provider_not_configured" };
   const invStatus = invStatusMap[deliveryResult.status] || "queued";
 
-  employee.invitationEmailStatus = invStatus;
-  employee.invitationEmailOutboxId = outboxRow.id;
-  employee.invitedAt = new Date();
-  await employee.save();
+  const updated = await updateEmployeeRow(employee.id, {
+    invitation_email_status: invStatus,
+    invitation_email_outbox_id: outboxRow.id,
+    invited_at: new Date().toISOString(),
+  });
 
   return res.status(200).json({
     success: true,
@@ -351,7 +358,7 @@ export const sendEmployeeInvite = async (req, res) => {
     inviteMethod: "email_outbox",
     outboxId: outboxRow.id,
     inviteUrl: invStatus === "provider_not_configured" ? inviteUrl : undefined,
-    employee: { _id: employee._id, email: employee.email, invitationEmailStatus: invStatus },
+    employee: { _id: updated.id, email: updated.email, invitationEmailStatus: invStatus },
   });
 };
 
@@ -371,9 +378,13 @@ export const createAndInviteEmployee = async (req, res) => {
 
   let employee;
   try {
-    employee = await Employee.create({ fname, lname, email, department, role, jobTitle: jobTitle || "", password: tempPassword });
+    employee = await createEmployeeRow({
+      fname, lname, email, department, role,
+      job_title: jobTitle || "",
+      password: tempPassword,
+    });
   } catch (err) {
-    if (err.code === 11000) return res.status(409).json({ success: false, message: "An employee with this email already exists." });
+    if (err.code === "23505") return res.status(409).json({ success: false, message: "An employee with this email already exists." });
     return res.status(500).json({ success: false, message: `Failed to create employee: ${err.message}` });
   }
 
@@ -390,7 +401,7 @@ export const createAndInviteEmployee = async (req, res) => {
         {
           redirectTo,
           data: {
-            mongoEmployeeId: employee._id.toString(),
+            employeeId: employee.id,
             role,
             department,
             jobTitle: jobTitle || "",
@@ -399,10 +410,11 @@ export const createAndInviteEmployee = async (req, res) => {
       );
 
       if (!authError) {
-        employee.invitationEmailStatus = "sent";
-        employee.invitedAt = new Date();
-        if (authData?.user?.id) employee.supabaseAuthUserId = authData.user.id;
-        await employee.save();
+        const updated = await updateEmployeeRow(employee.id, {
+          invitation_email_status: "sent",
+          invited_at: new Date().toISOString(),
+          ...(authData?.user?.id ? { supabase_auth_user_id: authData.user.id } : {}),
+        });
 
         return res.status(201).json({
           success: true,
@@ -410,9 +422,9 @@ export const createAndInviteEmployee = async (req, res) => {
           message: "Invitation email sent via Supabase Auth.",
           inviteMethod: "supabase_auth",
           employee: {
-            _id: employee._id, fname, lname, email, department, role,
+            _id: updated.id, fname, lname, email, department, role,
             invitationEmailStatus: "sent",
-            supabaseAuthUserId: employee.supabaseAuthUserId || null,
+            supabaseAuthUserId: updated.supabase_auth_user_id || null,
           },
         });
       }
@@ -422,7 +434,7 @@ export const createAndInviteEmployee = async (req, res) => {
   }
 
   // ── Fallback: email outbox ───────────────────────────────────────────────────
-  const inviteUrl = `${redirectTo}?employeeId=${employee._id}`;
+  const inviteUrl = `${redirectTo}?employeeId=${employee.id}`;
   const outboxRow = await queueEmail({
     toEmail: email,
     toName: `${fname} ${lname}`,
@@ -432,17 +444,18 @@ export const createAndInviteEmployee = async (req, res) => {
     templateKey: "employee_invite",
     templateVariables: { name: fname, role, department, inviteUrl },
     relatedEntityType: "employee",
-    relatedEntityId: employee._id.toString(),
+    relatedEntityId: employee.id,
   });
 
   const deliveryResult = await deliverEmail(outboxRow);
   const invStatusMap = { sent: "sent", failed: "failed", queued: "provider_not_configured" };
   const invStatus = invStatusMap[deliveryResult.status] || "queued";
 
-  employee.invitationEmailStatus = invStatus;
-  employee.invitationEmailOutboxId = outboxRow.id;
-  employee.invitedAt = new Date();
-  await employee.save();
+  const updated = await updateEmployeeRow(employee.id, {
+    invitation_email_status: invStatus,
+    invitation_email_outbox_id: outboxRow.id,
+    invited_at: new Date().toISOString(),
+  });
 
   return res.status(201).json({
     success: true,
@@ -451,6 +464,6 @@ export const createAndInviteEmployee = async (req, res) => {
     inviteMethod: "email_outbox",
     outboxId: outboxRow.id,
     inviteUrl: invStatus === "provider_not_configured" ? inviteUrl : undefined,
-    employee: { _id: employee._id, fname, lname, email, department, role, invitationEmailStatus: invStatus },
+    employee: { _id: updated.id, fname, lname, email, department, role, invitationEmailStatus: invStatus },
   });
 };

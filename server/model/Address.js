@@ -2,7 +2,8 @@ import mongoose from "mongoose";
 
 const addressSchema = new mongoose.Schema(
   {
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    // Postgres UUID (users now live in Supabase Postgres, not this DB).
+    userId: { type: String, required: true, index: true },
     label: { type: String, trim: true, default: "Home" },
     fullName: { type: String, trim: true, default: "" },
     phone: { type: String, trim: true, default: "" },

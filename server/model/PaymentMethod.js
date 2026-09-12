@@ -4,7 +4,8 @@ import mongoose from "mongoose";
 // Raw card processing requires a PCI-compliant provider (Stripe, etc.).
 const paymentMethodSchema = new mongoose.Schema(
   {
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    // Postgres UUID (users now live in Supabase Postgres, not this DB).
+    userId: { type: String, required: true, index: true },
     provider: { type: String, trim: true, default: "manual" }, // stripe | manual | etc.
     providerCustomerId: { type: String, default: null },
     providerPaymentMethodId: { type: String, default: null },

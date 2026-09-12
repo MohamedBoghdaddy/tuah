@@ -1,8 +1,9 @@
 import jwt from "jsonwebtoken";
-import mongoose from "mongoose";
-import User from "../model/usermodel.js";
-import Employee from "../model/employeemodel.js";
 import dotenv from "dotenv";
+import { findUserById } from "../models-pg/users.js";
+import { findEmployeeById } from "../models-pg/employees.js";
+import { can, EMPLOYEE_ROLE_MAP } from "../utils/permissions.js";
+import { isSupabaseConfigured } from "../config/supabase.js";
 
 dotenv.config();
 
@@ -21,7 +22,7 @@ const getTokenFromRequest = (req) => {
 };
 
 const requireDatabase = (res) => {
-  if (mongoose.connection.readyState === 1) return true;
+  if (isSupabaseConfigured()) return true;
 
   res.status(503).json({
     success: false,
@@ -30,8 +31,8 @@ const requireDatabase = (res) => {
   return false;
 };
 
-// Resolves the actor (User or Employee) from a JWT token.
-// Sets req.user (User model) or req.employee (Employee model) + req.actor (either).
+// Resolves the actor (User or Employee row) from a JWT token.
+// Sets req.user (users row) or req.employee (employees row) + req.actor (either).
 const resolveActor = async (req) => {
   const token = getTokenFromRequest(req);
   if (!token) return { error: 401, message: "Access denied. No token provided." };
@@ -43,15 +44,36 @@ const resolveActor = async (req) => {
     return { error: 401, message: "Invalid or expired token." };
   }
 
-  // Try User first, then Employee
-  const user = await User.findById(decoded.id).select("-password -__v");
+  // actorType is signed into every token issued going forward (usercontroller.js).
+  // Tokens signed before this migration have no actorType — fall back to trying
+  // both tables so existing sessions don't get logged out mid-rollout.
+  const actorType = decoded.actorType;
+
+  if (actorType === "employee") {
+    const employee = await findEmployeeById(decoded.id);
+    if (!employee) return { error: 401, message: "Invalid authentication." };
+    req.employee = employee;
+    req.actor = employee;
+    return { ok: true };
+  }
+
+  if (actorType === "user") {
+    const user = await findUserById(decoded.id);
+    if (!user) return { error: 401, message: "Invalid authentication." };
+    req.user = user;
+    req.actor = user;
+    return { ok: true };
+  }
+
+  // Legacy token (no actorType) — try User first, then Employee.
+  const user = await findUserById(decoded.id);
   if (user) {
     req.user = user;
     req.actor = user;
     return { ok: true };
   }
 
-  const employee = await Employee.findById(decoded.id).select("-password -__v");
+  const employee = await findEmployeeById(decoded.id);
   if (employee) {
     req.employee = employee;
     req.actor = employee;
@@ -148,7 +170,7 @@ export const requirePermission = (permission) => async (req, res, next) => {
       return res.status(401).json({ success: false, message: "Not authenticated." });
     }
 
-    if (typeof actor.can === "function" && actor.can(permission)) return next();
+    if (can(actor, permission, { isEmployee: Boolean(req.employee) })) return next();
 
     return res.status(403).json({
       success: false,
@@ -178,3 +200,7 @@ export const requireRole = (...roles) => async (req, res, next) => {
     return res.status(403).json({ success: false, message: "Forbidden." });
   }
 };
+
+// Exported for callers that need the raw role-mapping (e.g. controllers
+// building an actor's public profile from either table).
+export { EMPLOYEE_ROLE_MAP };

@@ -1,45 +1,59 @@
-import mongoose from "mongoose";
-import Order from "../model/Order.js";
+import {
+  VALID_STATUSES,
+  listAdminOrders as listAdminOrdersRows,
+  findOrderById,
+  createOrder as createOrderRow,
+  updateOrder as updateOrderRow,
+  updateOrderStatus as updateOrderStatusRow,
+  cancelOrder as cancelOrderRow,
+  generateOrderNumber,
+} from "../models-pg/orders.js";
 
-const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
-
-const VALID_STATUSES = ["new", "confirmed", "in_production", "ready", "delivered", "cancelled"];
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isValidId = (id) => typeof id === "string" && UUID_RE.test(id);
 
 const sanitize = (v) => (typeof v === "string" ? v.trim() : v);
 
-const buildOrderPayload = (body, { partial = false } = {}) => {
+const FIELD_MAP = {
+  orderNumber: "order_number",
+  customerName: "customer_name",
+  customerEmail: "customer_email",
+  notes: "notes",
+  assignedEmployeeName: "assigned_employee_name",
+  customerId: "customer_id",
+  assignedEmployeeId: "assigned_employee_id",
+  subtotal: "subtotal",
+  tax: "tax",
+  installationFee: "installation_fee",
+  discount: "discount",
+  total: "total",
+  status: "status",
+  paymentStatus: "payment_status",
+  installationPreference: "installation_preference",
+  estimatedDays: "estimated_days",
+};
+
+const buildOrderPayload = (body) => {
   const p = {};
 
   ["orderNumber", "customerName", "customerEmail", "notes", "assignedEmployeeName"].forEach((f) => {
-    if (body[f] !== undefined) p[f] = sanitize(body[f]);
+    if (body[f] !== undefined) p[FIELD_MAP[f]] = sanitize(body[f]);
   });
 
-  if (body.customerId !== undefined) p.customerId = body.customerId || null;
-  if (body.assignedEmployeeId !== undefined) p.assignedEmployeeId = body.assignedEmployeeId || null;
+  if (body.customerId !== undefined) p.customer_id = body.customerId || null;
+  if (body.assignedEmployeeId !== undefined) p.assigned_employee_id = body.assignedEmployeeId || null;
 
   ["subtotal", "tax", "installationFee", "discount", "total"].forEach((f) => {
-    if (body[f] !== undefined) p[f] = Number(body[f]) || 0;
+    if (body[f] !== undefined) p[FIELD_MAP[f]] = Number(body[f]) || 0;
   });
 
   if (body.status !== undefined) p.status = sanitize(body.status);
-  if (body.paymentStatus !== undefined) p.paymentStatus = sanitize(body.paymentStatus);
-  if (body.installationPreference !== undefined) p.installationPreference = sanitize(body.installationPreference);
-  if (body.estimatedDays !== undefined) p.estimatedDays = body.estimatedDays ? Number(body.estimatedDays) : null;
-
-  if (Array.isArray(body.items)) {
-    p.items = body.items.map((item) => ({
-      productId: item.productId || null,
-      name: sanitize(item.name) || "Item",
-      quantity: Math.max(1, Number(item.quantity) || 1),
-      unitPrice: Number(item.unitPrice) || 0,
-      total: Number(item.total) || 0,
-      imageUrl: item.imageUrl || "",
-      sku: item.sku || "",
-    }));
-  }
+  if (body.paymentStatus !== undefined) p.payment_status = sanitize(body.paymentStatus);
+  if (body.installationPreference !== undefined) p.installation_preference = sanitize(body.installationPreference);
+  if (body.estimatedDays !== undefined) p.estimated_days = body.estimatedDays ? Number(body.estimatedDays) : null;
 
   if (body.deliveryAddress && typeof body.deliveryAddress === "object") {
-    p.deliveryAddress = {
+    p.delivery_address = {
       line1: sanitize(body.deliveryAddress.line1) || "",
       city: sanitize(body.deliveryAddress.city) || "",
       country: sanitize(body.deliveryAddress.country) || "",
@@ -49,76 +63,47 @@ const buildOrderPayload = (body, { partial = false } = {}) => {
   return p;
 };
 
-const generateOrderNumber = () => `HJ-${Date.now().toString().slice(-6)}`;
+const buildOrderItems = (body) => {
+  if (!Array.isArray(body.items)) return undefined;
+  return body.items.map((item) => ({
+    productId: item.productId || null,
+    name: sanitize(item.name) || "Item",
+    quantity: Math.max(1, Number(item.quantity) || 1),
+    unitPrice: Number(item.unitPrice) || 0,
+    total: Number(item.total) || 0,
+    imageUrl: item.imageUrl || "",
+    sku: item.sku || "",
+  }));
+};
 
 export const listAdminOrders = async (req, res) => {
-  try {
-    const { status, page = 1, limit = 100 } = req.query;
-    const filter = {};
-    if (status && VALID_STATUSES.includes(status)) filter.status = status;
-
-    const pageNum = Math.max(1, Number(page) || 1);
-    const limitNum = Math.min(200, Math.max(1, Number(limit) || 100));
-
-    const [orders, total] = await Promise.all([
-      Order.find(filter)
-        .populate("customerId", "firstName lastName email")
-        .populate("assignedEmployeeId", "fname lname")
-        .sort({ createdAt: -1 })
-        .skip((pageNum - 1) * limitNum)
-        .limit(limitNum),
-      Order.countDocuments(filter),
-    ]);
-
-    const normalised = orders.map((o) => {
-      const obj = o.toObject();
-      if (obj.customerId) {
-        obj._resolvedCustomerName = `${obj.customerId.firstName} ${obj.customerId.lastName}`.trim() || obj.customerName;
-      } else {
-        obj._resolvedCustomerName = obj.customerName;
-      }
-      if (obj.assignedEmployeeId) {
-        obj._resolvedAssigneeName = `${obj.assignedEmployeeId.fname} ${obj.assignedEmployeeId.lname}`.trim();
-      } else {
-        obj._resolvedAssigneeName = obj.assignedEmployeeName;
-      }
-      return obj;
-    });
-
-    return res.json({ success: true, count: orders.length, total, orders: normalised });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
+  const { status, page = 1, limit = 100 } = req.query;
+  const { orders, total } = await listAdminOrdersRows({ status, page, limit });
+  return res.json({ success: true, count: orders.length, total, orders });
 };
 
 export const getAdminOrder = async (req, res) => {
   if (!isValidId(req.params.id)) {
     return res.status(400).json({ success: false, message: "Invalid order id." });
   }
-  try {
-    const order = await Order.findById(req.params.id)
-      .populate("customerId", "firstName lastName email")
-      .populate("assignedEmployeeId", "fname lname email");
-    if (!order) return res.status(404).json({ success: false, message: "Order not found." });
-    return res.json({ success: true, order });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
+  const order = await findOrderById(req.params.id);
+  if (!order) return res.status(404).json({ success: false, message: "Order not found." });
+  return res.json({ success: true, order });
 };
 
 export const createAdminOrder = async (req, res) => {
   try {
     const payload = buildOrderPayload(req.body);
-    if (!payload.orderNumber) payload.orderNumber = generateOrderNumber();
+    if (!payload.order_number) payload.order_number = generateOrderNumber();
 
     if (payload.status && !VALID_STATUSES.includes(payload.status)) {
       return res.status(400).json({ success: false, message: "Invalid order status." });
     }
 
-    const order = await Order.create(payload);
+    const order = await createOrderRow(payload, buildOrderItems(req.body) || []);
     return res.status(201).json({ success: true, order });
   } catch (err) {
-    if (err.code === 11000) {
+    if (err.code === "23505") {
       return res.status(409).json({ success: false, message: "Order number already exists." });
     }
     return res.status(500).json({ success: false, message: err.message });
@@ -130,12 +115,12 @@ export const updateAdminOrder = async (req, res) => {
     return res.status(400).json({ success: false, message: "Invalid order id." });
   }
   try {
-    const payload = buildOrderPayload(req.body, { partial: true });
+    const payload = buildOrderPayload(req.body);
     if (payload.status && !VALID_STATUSES.includes(payload.status)) {
       return res.status(400).json({ success: false, message: "Invalid order status." });
     }
 
-    const order = await Order.findByIdAndUpdate(req.params.id, payload, { new: true, runValidators: true });
+    const order = await updateOrderRow(req.params.id, payload, buildOrderItems(req.body));
     if (!order) return res.status(404).json({ success: false, message: "Order not found." });
     return res.json({ success: true, order });
   } catch (err) {
@@ -152,7 +137,7 @@ export const updateAdminOrderStatus = async (req, res) => {
     return res.status(400).json({ success: false, message: `Invalid status. Must be one of: ${VALID_STATUSES.join(", ")}` });
   }
   try {
-    const order = await Order.findByIdAndUpdate(req.params.id, { status }, { new: true });
+    const order = await updateOrderStatusRow(req.params.id, status);
     if (!order) return res.status(404).json({ success: false, message: "Order not found." });
     return res.json({ success: true, order });
   } catch (err) {
@@ -165,7 +150,7 @@ export const cancelAdminOrder = async (req, res) => {
     return res.status(400).json({ success: false, message: "Invalid order id." });
   }
   try {
-    const order = await Order.findByIdAndUpdate(req.params.id, { status: "cancelled" }, { new: true });
+    const order = await cancelOrderRow(req.params.id);
     if (!order) return res.status(404).json({ success: false, message: "Order not found." });
     return res.json({ success: true, order, message: "Order cancelled." });
   } catch (err) {

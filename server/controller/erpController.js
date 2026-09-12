@@ -7,8 +7,8 @@ import ApprovalRequest from "../model/ApprovalRequest.js";
 import ApprovalStep from "../model/ApprovalStep.js";
 import ERPSchemaRelation from "../model/ERPSchemaRelation.js";
 import ERPIntegrationStatus from "../model/ERPIntegrationStatus.js";
-import Product from "../model/productsmodel.js";
-import Employee from "../model/employeemodel.js";
+import { countProductsExcludingStatus } from "../models-pg/products.js";
+import { countEmployeesExcludingStatus, listEmployeesExcludingStatus } from "../models-pg/employees.js";
 import Lead from "../model/Lead.js";
 import Quote from "../model/Quote.js";
 
@@ -137,9 +137,9 @@ export const getERPOverview = async (req, res) => {
       Department.countDocuments(),
       JobPosition.countDocuments(),
       ERPEmployee.countDocuments(),
-      Employee.countDocuments({ status: { $ne: "inactive" } }),
+      countEmployeesExcludingStatus("inactive"),
       ApprovalRequest.countDocuments({ status: "pending" }),
-      Product.countDocuments({ status: { $ne: "archived" } }),
+      countProductsExcludingStatus("archived"),
       Lead.countDocuments({ status: { $nin: ["archived", "lost"] } }),
       Quote.countDocuments({ status: { $nin: ["cancelled", "expired"] } }),
     ]);
@@ -382,10 +382,8 @@ export const getERPHierarchy = async (req, res) => {
       return res.json({ success: true, data: hierarchy, source: "erp_employees" });
     }
 
-    // 2. Fall back to the regular Employee model — normalise to the shape buildHierarchy expects
-    const realEmps = await Employee.find({ status: { $ne: "inactive" } })
-      .select("fname lname email department jobTitle seniorityLevel role status _id")
-      .sort({ seniorityLevel: 1, fname: 1 });
+    // 2. Fall back to the regular Employee model (now Postgres) — normalise to the shape buildHierarchy expects
+    const realEmps = await listEmployeesExcludingStatus("inactive");
 
     if (realEmps.length > 0) {
       // Build a simple department-based hierarchy:
@@ -395,13 +393,13 @@ export const getERPHierarchy = async (req, res) => {
         Senior: "senior", "Mid-Level": "junior", Junior: "junior",
       };
       const empObjects = realEmps.map((e) => ({
-        _id: e._id.toString(),
-        id: e._id.toString(),
+        _id: e.id,
+        id: e.id,
         fullName: `${e.fname} ${e.lname}`,
         email: e.email,
-        level: LEVEL_MAP[e.seniorityLevel] || "junior",
+        level: LEVEL_MAP[e.seniority_level] || "junior",
         dept: e.department,
-        position: e.jobTitle || `${e.role} — ${e.department}`,
+        position: e.job_title || `${e.role} — ${e.department}`,
         code: "",
         assignedModules: [],
         managerId: null, // flat list — no explicit manager chain in Employee model

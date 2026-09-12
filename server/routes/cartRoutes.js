@@ -1,13 +1,18 @@
 import express from "express";
-import mongoose from "mongoose";
-import Cart from "../model/Cart.js";
-import Product from "../model/productsmodel.js";
+import {
+  getCart,
+  addCartItem,
+  setCartItemQuantity,
+  removeCartItem,
+  clearCart,
+  mergeCartItems,
+} from "../models-pg/carts.js";
+import { findProductById } from "../models-pg/products.js";
 import { verifyUser } from "../middleware/AuthMiddleware.js";
 
 const router = express.Router();
-const isValidId = (id) => mongoose.Types.ObjectId.isValid(String(id || ""));
-const PRODUCT_SELECT =
-  "name slug description price discountPrice imageUrl images galleryImages category collection stock lowStockThreshold status material color room useCase featured";
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isValidId = (id) => typeof id === "string" && UUID_RE.test(id);
 
 router.use(verifyUser);
 
@@ -33,31 +38,22 @@ const isPurchasableProduct = (product) =>
 
 const toProductPayload = (product) => {
   if (!product) return null;
-  const plain = typeof product.toObject === "function" ? product.toObject() : product;
   return {
-    ...plain,
-    _id: plain._id,
-    id: String(plain._id),
-    productId: String(plain._id),
-    image: plain.imageUrl || plain.images?.[0] || plain.galleryImages?.[0]?.url || "",
-    img: plain.imageUrl || plain.images?.[0] || plain.galleryImages?.[0]?.url || "",
+    ...product,
+    productId: String(product._id),
+    image: product.imageUrl || product.images?.[0] || product.galleryImages?.[0]?.url || "",
+    img: product.imageUrl || product.images?.[0] || product.galleryImages?.[0]?.url || "",
   };
 };
 
 const serializeCart = (cart) => {
-  const items = (cart?.items || []).map((item) => {
-    const populatedProduct =
-      item.productId && typeof item.productId === "object" && item.productId._id
-        ? item.productId
-        : null;
-    const rawProductId = populatedProduct?._id || item.productId;
-    const product = toProductPayload(populatedProduct);
-
+  const items = (cart.items || []).map((item) => {
+    const product = toProductPayload(item.product);
     return {
       ...(product || {
-        id: String(rawProductId),
-        _id: rawProductId,
-        productId: String(rawProductId),
+        id: item.productId,
+        _id: item.productId,
+        productId: item.productId,
         name: "Product unavailable",
         title: "Product unavailable",
         price: 0,
@@ -66,51 +62,30 @@ const serializeCart = (cart) => {
         unavailable: true,
       }),
       product,
-      productId: String(rawProductId),
-      quantity: Number(item.quantity || 1),
+      productId: item.productId,
+      quantity: item.quantity,
       addedAt: item.addedAt,
       unavailable: !product,
     };
   });
 
-  return {
-    _id: cart?._id,
-    userId: cart?.userId,
-    items,
-    updatedAt: cart?.updatedAt,
-  };
+  return { _id: cart._id, userId: cart.userId, items, updatedAt: cart.updatedAt };
 };
-
-const getOrCreateCart = async (userId) => {
-  let cart = await Cart.findOne({ userId });
-  if (!cart) cart = await Cart.create({ userId, items: [] });
-  return cart;
-};
-
-const getPopulatedCart = async (userId) =>
-  Cart.findOne({ userId }).populate("items.productId", PRODUCT_SELECT);
 
 const sendCart = async (res, userId, status = 200, extra = {}) => {
-  const populated = await getPopulatedCart(userId);
-  const cart = serializeCart(populated || { userId, items: [] });
-  return res.status(status).json({
-    success: true,
-    cart,
-    items: cart.items,
-    ...extra,
-  });
+  const cart = serializeCart(await getCart(userId));
+  return res.status(status).json({ success: true, cart, items: cart.items, ...extra });
 };
 
 const findPurchasableProduct = async (productId) => {
   if (!isValidId(productId)) return null;
-  const product = await Product.findById(productId).select(PRODUCT_SELECT);
+  const product = await findProductById(productId);
   return isPurchasableProduct(product) ? product : null;
 };
 
 router.get("/", async (req, res, next) => {
   try {
-    await getOrCreateCart(req.user._id);
-    return sendCart(res, req.user._id);
+    return sendCart(res, req.user.id);
   } catch (error) {
     return next(error);
   }
@@ -132,23 +107,12 @@ router.post("/items", async (req, res, next) => {
     if (!product) {
       return res.status(404).json({ success: false, message: "Product not found." });
     }
-
-    const cart = await getOrCreateCart(req.user._id);
-    const existing = cart.items.find((item) => String(item.productId) === String(product._id));
-    const nextQuantity = Number(existing?.quantity || 0) + quantity;
-
-    if (Number(product.stock) >= 0 && nextQuantity > Number(product.stock)) {
-      return res.status(400).json({
-        success: false,
-        message: `Only ${product.stock} item(s) available.`,
-      });
+    if (Number(product.stock) >= 0 && quantity > Number(product.stock)) {
+      return res.status(400).json({ success: false, message: `Only ${product.stock} item(s) available.` });
     }
 
-    if (existing) existing.quantity = nextQuantity;
-    else cart.items.push({ productId: product._id, quantity });
-
-    await cart.save();
-    return sendCart(res, req.user._id, 200, { message: "Added to cart." });
+    await addCartItem(req.user.id, productId, quantity);
+    return sendCart(res, req.user.id, 200, { message: "Added to cart." });
   } catch (error) {
     return next(error);
   }
@@ -163,11 +127,9 @@ router.patch("/items/:productId", async (req, res, next) => {
       return res.status(400).json({ success: false, message: "Invalid product id." });
     }
 
-    const cart = await getOrCreateCart(req.user._id);
     if (quantity <= 0) {
-      cart.items = cart.items.filter((item) => String(item.productId) !== productId);
-      await cart.save();
-      return sendCart(res, req.user._id, 200, { message: "Removed from cart." });
+      await removeCartItem(req.user.id, productId);
+      return sendCart(res, req.user.id, 200, { message: "Removed from cart." });
     }
 
     const product = await findPurchasableProduct(productId);
@@ -175,18 +137,11 @@ router.patch("/items/:productId", async (req, res, next) => {
       return res.status(404).json({ success: false, message: "Product not found." });
     }
     if (Number(product.stock) >= 0 && quantity > Number(product.stock)) {
-      return res.status(400).json({
-        success: false,
-        message: `Only ${product.stock} item(s) available.`,
-      });
+      return res.status(400).json({ success: false, message: `Only ${product.stock} item(s) available.` });
     }
 
-    const existing = cart.items.find((item) => String(item.productId) === productId);
-    if (existing) existing.quantity = quantity;
-    else cart.items.push({ productId, quantity });
-
-    await cart.save();
-    return sendCart(res, req.user._id, 200, { message: "Cart updated." });
+    await setCartItemQuantity(req.user.id, productId, quantity);
+    return sendCart(res, req.user.id, 200, { message: "Cart updated." });
   } catch (error) {
     return next(error);
   }
@@ -199,10 +154,8 @@ router.delete("/items/:productId", async (req, res, next) => {
       return res.status(400).json({ success: false, message: "Invalid product id." });
     }
 
-    const cart = await getOrCreateCart(req.user._id);
-    cart.items = cart.items.filter((item) => String(item.productId) !== productId);
-    await cart.save();
-    return sendCart(res, req.user._id, 200, { message: "Removed from cart." });
+    await removeCartItem(req.user.id, productId);
+    return sendCart(res, req.user.id, 200, { message: "Removed from cart." });
   } catch (error) {
     return next(error);
   }
@@ -210,10 +163,8 @@ router.delete("/items/:productId", async (req, res, next) => {
 
 router.delete("/", async (req, res, next) => {
   try {
-    const cart = await getOrCreateCart(req.user._id);
-    cart.items = [];
-    await cart.save();
-    return sendCart(res, req.user._id, 200, { message: "Cart cleared." });
+    await clearCart(req.user.id);
+    return sendCart(res, req.user.id, 200, { message: "Cart cleared." });
   } catch (error) {
     return next(error);
   }
@@ -224,44 +175,20 @@ router.post("/merge", async (req, res, next) => {
     const rawItems = Array.isArray(req.body.items)
       ? req.body.items
       : Object.values(req.body.items || {});
-    const cart = await getOrCreateCart(req.user._id);
-    const skipped = [];
 
-    for (const rawItem of rawItems) {
-      const productId = productIdFromPayload(rawItem);
-      const quantity = normalizeQuantity(rawItem.quantity, 1);
+    const normalizedItems = rawItems
+      .map((rawItem) => ({
+        productId: productIdFromPayload(rawItem),
+        quantity: normalizeQuantity(rawItem.quantity, 1),
+      }))
+      .filter((item) => isValidId(item.productId) && item.quantity >= 1);
 
-      if (!isValidId(productId) || quantity < 1) {
-        skipped.push({ productId, reason: "invalid_product_or_quantity" });
-        continue;
-      }
+    const { skipped: invalidSkipped } = { skipped: rawItems.length - normalizedItems.length };
+    const { skipped } = await mergeCartItems(req.user.id, normalizedItems, findPurchasableProduct);
 
-      const product = await findPurchasableProduct(productId);
-      if (!product) {
-        skipped.push({ productId, reason: "product_not_found" });
-        continue;
-      }
-
-      const existing = cart.items.find((item) => String(item.productId) === String(product._id));
-      const desiredQuantity = Number(existing?.quantity || 0) + quantity;
-      const nextQuantity =
-        Number(product.stock) >= 0
-          ? Math.min(desiredQuantity, Number(product.stock))
-          : desiredQuantity;
-
-      if (nextQuantity < 1) {
-        skipped.push({ productId, reason: "out_of_stock" });
-        continue;
-      }
-
-      if (existing) existing.quantity = nextQuantity;
-      else cart.items.push({ productId: product._id, quantity: nextQuantity });
-    }
-
-    await cart.save();
-    return sendCart(res, req.user._id, 200, {
+    return sendCart(res, req.user.id, 200, {
       message: "Cart merged.",
-      skipped,
+      skipped: [...(invalidSkipped ? [{ reason: "invalid_product_or_quantity", count: invalidSkipped }] : []), ...skipped],
     });
   } catch (error) {
     return next(error);

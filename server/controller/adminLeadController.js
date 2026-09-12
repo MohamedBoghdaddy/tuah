@@ -194,7 +194,7 @@ export const createLead = async (req, res) => {
   const payload = leadPayload(req.body);
   const validationError = validateLead(payload);
   if (validationError) return res.status(400).json({ success: false, message: validationError });
-  if (req.user?._id) payload.createdBy = req.user._id;
+  if (req.user?._id) payload.createdBy = req.user.id;
   const lead = await Lead.create(payload);
   return res.status(201).json({ success: true, lead });
 };
@@ -257,7 +257,7 @@ export const createQuote = async (req, res) => {
   });
   const validationError = validateQuote(payload);
   if (validationError) return res.status(400).json({ success: false, message: validationError });
-  if (req.user?._id) payload.createdBy = req.user._id;
+  if (req.user?._id) payload.createdBy = req.user.id;
   payload.quoteNumber = await nextQuoteNumber();
   const quote = await Quote.create(payload);
   return res.status(201).json({ success: true, quote });

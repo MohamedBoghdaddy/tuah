@@ -1,13 +1,17 @@
-import bcrypt from "bcrypt";
-import crypto from "crypto";
-import mongoose from "mongoose";
-import Employee from "../model/employeemodel.js";
+import {
+  listEmployees as listEmployeesRows,
+  findEmployeeById,
+  createEmployee as createEmployeeRow,
+  updateEmployee as updateEmployeeRow,
+  deactivateEmployee as deactivateEmployeeRow,
+  countEmployeesByRole,
+} from "../models-pg/employees.js";
 
-const publicFields = "-password -__v";
 const roles = ["readonly", "admin"];
 const statuses = ["active", "inactive", "invited", "suspended"];
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
+const isValidId = (id) => typeof id === "string" && UUID_RE.test(id);
 
 const toEmployeePayload = (body, { partial = false } = {}) => {
   const allowed = [
@@ -21,16 +25,28 @@ const toEmployeePayload = (body, { partial = false } = {}) => {
     "role",
     "status",
   ];
+  const fieldMap = {
+    fname: "fname",
+    lname: "lname",
+    email: "email",
+    department: "department",
+    jobTitle: "job_title",
+    seniorityLevel: "seniority_level",
+    phone: "phone",
+    role: "role",
+    status: "status",
+  };
   const payload = {};
 
   allowed.forEach((field) => {
     if (body[field] !== undefined) {
-      payload[field] = typeof body[field] === "string" ? body[field].trim() : body[field];
+      const value = typeof body[field] === "string" ? body[field].trim() : body[field];
+      payload[fieldMap[field]] = value;
     }
   });
 
   if (payload.email) payload.email = payload.email.toLowerCase();
-  if (!partial && !body.password) payload.password = crypto.randomBytes(16).toString("hex");
+  // If no password is supplied, leave it unset — createEmployee() generates one.
   if (body.password) payload.password = body.password;
 
   return payload;
@@ -54,28 +70,14 @@ const validateEmployeePayload = (payload, { partial = false } = {}) => {
 };
 
 const handleDuplicate = (error, res) => {
-  if (error?.code !== 11000) return false;
+  if (error?.code !== "23505") return false;
   res.status(409).json({ success: false, message: "Employee email must be unique." });
   return true;
 };
 
 export const listEmployees = async (req, res) => {
   const { status, q, department } = req.query;
-  const filter = {};
-
-  if (status) filter.status = status;
-  if (department) filter.department = new RegExp(`^${String(department).trim()}$`, "i");
-  if (q) {
-    filter.$or = [
-      { fname: new RegExp(String(q), "i") },
-      { lname: new RegExp(String(q), "i") },
-      { email: new RegExp(String(q), "i") },
-      { department: new RegExp(String(q), "i") },
-      { jobTitle: new RegExp(String(q), "i") },
-    ];
-  }
-
-  const employees = await Employee.find(filter).select(publicFields).sort({ createdAt: -1 });
+  const employees = await listEmployeesRows({ status, q, department });
   return res.json({ success: true, count: employees.length, employees });
 };
 
@@ -84,7 +86,7 @@ export const getEmployeeById = async (req, res) => {
     return res.status(400).json({ success: false, message: "Invalid employee id." });
   }
 
-  const employee = await Employee.findById(req.params.id).select(publicFields);
+  const employee = await findEmployeeById(req.params.id);
   if (!employee) return res.status(404).json({ success: false, message: "Employee not found." });
   return res.json({ success: true, employee });
 };
@@ -96,15 +98,14 @@ export const createEmployee = async (req, res) => {
     if (validationError) return res.status(400).json({ success: false, message: validationError });
 
     if (payload.role === "admin") {
-      const adminCount = await Employee.countDocuments({ role: "admin", status: { $ne: "inactive" } });
+      const adminCount = await countEmployeesByRole("admin", { excludeStatus: "inactive" });
       if (adminCount >= 2) {
         return res.status(400).json({ success: false, message: "There can only be two active admins." });
       }
     }
 
-    const employee = await Employee.create(payload);
-    const safeEmployee = await Employee.findById(employee._id).select(publicFields);
-    return res.status(201).json({ success: true, employee: safeEmployee });
+    const employee = await createEmployeeRow(payload);
+    return res.status(201).json({ success: true, employee });
   } catch (error) {
     if (handleDuplicate(error, res)) return;
     return res.status(500).json({ success: false, message: error.message });
@@ -122,18 +123,14 @@ export const updateEmployee = async (req, res) => {
     if (validationError) return res.status(400).json({ success: false, message: validationError });
 
     if (payload.role === "admin") {
-      const currentEmployee = await Employee.findById(req.params.id);
-      const adminCount = await Employee.countDocuments({ role: "admin", status: { $ne: "inactive" } });
+      const currentEmployee = await findEmployeeById(req.params.id);
+      const adminCount = await countEmployeesByRole("admin", { excludeStatus: "inactive" });
       if (adminCount >= 2 && currentEmployee?.role !== "admin") {
         return res.status(400).json({ success: false, message: "Maximum admin limit reached." });
       }
     }
 
-    if (payload.password) payload.password = await bcrypt.hash(payload.password, 10);
-    const employee = await Employee.findByIdAndUpdate(req.params.id, payload, {
-      new: true,
-      runValidators: true,
-    }).select(publicFields);
+    const employee = await updateEmployeeRow(req.params.id, payload);
     if (!employee) return res.status(404).json({ success: false, message: "Employee not found." });
 
     return res.json({ success: true, employee });
@@ -148,11 +145,7 @@ export const deactivateEmployee = async (req, res) => {
     return res.status(400).json({ success: false, message: "Invalid employee id." });
   }
 
-  const employee = await Employee.findByIdAndUpdate(
-    req.params.id,
-    { status: "inactive" },
-    { new: true }
-  ).select(publicFields);
+  const employee = await deactivateEmployeeRow(req.params.id);
   if (!employee) return res.status(404).json({ success: false, message: "Employee not found." });
   return res.json({ success: true, employee, message: "Employee deactivated." });
 };

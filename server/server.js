@@ -10,6 +10,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import path from "path";
 import { fileURLToPath } from "url";
+import { isSupabaseConfigured } from "./config/supabase.js";
 
 import commerceRoutes from "./routes/commerceRoutes.js";
 import productRoutes from "./routes/productsRoutes.js";
@@ -152,6 +153,17 @@ const requireMongoConnection = (req, res, next) => {
   return res.status(503).json(databaseUnavailablePayload());
 };
 
+// Gate for routes whose data has moved to Supabase Postgres (products,
+// wishlist — see the Mongo->Supabase migration). Checked lazily per-request
+// so it reflects config added after boot without a restart.
+const requireSupabaseConnection = (req, res, next) => {
+  if (isSupabaseConfigured()) return next();
+  return res.status(503).json({
+    success: false,
+    message: "Supabase is unavailable. Database-backed endpoints are temporarily disabled.",
+  });
+};
+
 const isMongoUnavailableError = (error = {}) => {
   const message = error.message || "";
   return (
@@ -263,21 +275,21 @@ const configureApp = ({ mongoConnected, sessionStore }) => {
   app.use("/api/admin/import",  requireMongoConnection, importExportRoutes);
 
   // ── Specific routes first (more specific path → mounted before catch-alls) ──
-  app.use("/api/admin/products",  requireMongoConnection, adminProductRoutes);
-  app.use("/api/admin/employees", requireMongoConnection, adminEmployeeRoutes);
-  app.use("/api/admin/orders",    requireMongoConnection, adminOrderRoutes);
+  app.use("/api/admin/products",  requireSupabaseConnection, adminProductRoutes);
+  app.use("/api/admin/employees", requireSupabaseConnection, adminEmployeeRoutes);
+  app.use("/api/admin/orders",    requireSupabaseConnection, adminOrderRoutes);
   app.use("/api/admin/dashboard", requireMongoConnection, analyticsRoutes);
   app.use("/api/admin/analytics", requireMongoConnection, analyticsRoutes);
   app.use("/api/admin/emails",    requireMongoConnection, emailAdminRoutes);
   app.use("/api/admin/erp",       requireMongoConnection, erpRoutes);
   app.use("/api/admin",           requireMongoConnection, adminLeadRoutes);
   app.use("/api/analytics",       analyticsRoutes);
-  app.use("/api/orders",          requireMongoConnection, orderRoutes);
-  app.use("/api/cart",            requireMongoConnection, cartRoutes);
-  app.use("/api/wishlist",        requireMongoConnection, wishlistRoutes);
+  app.use("/api/orders",          requireSupabaseConnection, orderRoutes);
+  app.use("/api/cart",            requireSupabaseConnection, cartRoutes);
+  app.use("/api/wishlist",        requireSupabaseConnection, wishlistRoutes);
   app.use("/api/customer",        requireMongoConnection, customerRoutes);
   app.use("/api/support",         requireMongoConnection, supportRoutes);
-  app.use("/api/products",        requireMongoConnection, productRoutes);
+  app.use("/api/products",        requireSupabaseConnection, productRoutes);
   app.use("/api/users",           userRoutes);
   app.use("/api/erp",             requireMongoConnection, erpRoutes);
   app.use("/api/settings",        settingsRoutes);
