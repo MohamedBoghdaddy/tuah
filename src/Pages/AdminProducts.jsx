@@ -15,6 +15,7 @@ const EMPTY_FORM = {
   category: "",
   collection: "",
   sku: "",
+  barcode: "",
   material: "",
   color: "",
   room: "",
@@ -122,6 +123,7 @@ export default function AdminProducts() {
       category: product.category || "",
       collection: product.collection || "",
       sku: product.sku || "",
+      barcode: product.barcode || "",
       material: product.material || "",
       color: product.color || "",
       room: product.room || product.useCase || "",
@@ -204,6 +206,7 @@ export default function AdminProducts() {
         category,
         collection: form.collection.trim() || category,
         sku: form.sku.trim(),
+        barcode: form.barcode.trim(),
         material: form.material.trim(),
         color: form.color.trim(),
         room: form.room.trim(),
@@ -335,7 +338,8 @@ export default function AdminProducts() {
           return (
             product.name?.toLowerCase().includes(needle) ||
             product.category?.toLowerCase().includes(needle) ||
-            product.sku?.toLowerCase().includes(needle)
+            product.sku?.toLowerCase().includes(needle) ||
+            product.barcode?.toLowerCase().includes(needle)
           );
         }}
         emptyTitle="No products yet"
@@ -458,6 +462,10 @@ export default function AdminProducts() {
                 <div className="admin-field">
                   <label htmlFor="prod-sku">SKU</label>
                   <input id="prod-sku" name="sku" value={form.sku} onChange={handleFormChange} />
+                </div>
+                <div className="admin-field">
+                  <label htmlFor="prod-barcode">Barcode</label>
+                  <input id="prod-barcode" name="barcode" value={form.barcode} onChange={handleFormChange} />
                 </div>
                 <div className="admin-field">
                   <label htmlFor="prod-material">Material</label>
@@ -608,6 +616,7 @@ export default function AdminProducts() {
                 <dt>Category</dt><dd>{selected.category}</dd>
                 <dt>Collection</dt><dd>{selected.collection || "Not set"}</dd>
                 <dt>SKU</dt><dd>{selected.sku || "Not set"}</dd>
+                <dt>Barcode</dt><dd>{selected.barcode || "Not set"}</dd>
                 <dt>Status</dt><dd>{selected.status || "active"}</dd>
                 <dt>Price</dt><dd>${Number(selected.price || 0).toLocaleString()}</dd>
                 {selected.discountPrice && <><dt>Discount Price</dt><dd>${Number(selected.discountPrice).toLocaleString()}</dd></>}

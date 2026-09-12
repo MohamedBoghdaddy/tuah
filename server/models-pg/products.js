@@ -14,7 +14,13 @@ const throwIfError = (error, fallbackMessage) => {
 
 const withDuplicateCheck = (error, message) => {
   if (error?.code === "23505") {
-    const key = /slug/i.test(error.message || "") ? "Slug" : /sku/i.test(error.message || "") ? "SKU" : "Field";
+    const key = /slug/i.test(error.message || "")
+      ? "Slug"
+      : /sku/i.test(error.message || "")
+        ? "SKU"
+        : /barcode/i.test(error.message || "")
+          ? "Barcode"
+          : "Field";
     const err = new Error(`${key} must be unique.`);
     err.code = "23505";
     return err;
@@ -53,6 +59,7 @@ export const toProductJSON = (row) => {
     price: row.price,
     discountPrice: row.discount_price,
     sku: row.sku,
+    barcode: row.barcode,
     material: row.material,
     color: row.color,
     room: row.room,

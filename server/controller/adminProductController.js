@@ -40,6 +40,7 @@ const FIELD_MAP = {
   category: "category",
   collection: "collection",
   sku: "sku",
+  barcode: "barcode",
   material: "material",
   color: "color",
   room: "room",
@@ -58,7 +59,7 @@ const FIELD_MAP = {
 
 const buildProductPayload = (body, { partial = false } = {}) => {
   const payload = {};
-  const stringFields = ["name", "description", "category", "collection", "sku", "material", "color", "room", "useCase", "dimensions"];
+  const stringFields = ["name", "description", "category", "collection", "sku", "barcode", "material", "color", "room", "useCase", "dimensions"];
 
   stringFields.forEach((field) => {
     if (body[field] !== undefined) payload[FIELD_MAP[field]] = sanitizeString(body[field]);
@@ -67,6 +68,7 @@ const buildProductPayload = (body, { partial = false } = {}) => {
   if (body.slug !== undefined) payload.slug = slugify(body.slug);
   if (!partial && !payload.slug && payload.name) payload.slug = slugify(payload.name);
   if (payload.sku === "") delete payload.sku;
+  if (payload.barcode === "") delete payload.barcode;
   if (payload.slug === "") delete payload.slug;
 
   ["price", "discountPrice", "stock", "lowStockThreshold"].forEach((field) => {
