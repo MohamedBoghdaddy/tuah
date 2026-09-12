@@ -31,6 +31,7 @@ import importExportRoutes from "./routes/importExportRoutes.js";
 import supportRoutes from "./routes/supportRoutes.js";
 import cartRoutes from "./routes/cartRoutes.js";
 import wishlistRoutes from "./routes/wishlistRoutes.js";
+import inventoryRoutes from "./modules/inventory/routes/inventoryRoutes.js";
 
 dotenv.config();
 
@@ -135,6 +136,7 @@ const configureApp = () => {
   app.use("/api/admin/analytics", requireSupabaseConnection, analyticsRoutes);
   app.use("/api/admin/emails",    requireSupabaseConnection, emailAdminRoutes);
   app.use("/api/admin/erp",       requireSupabaseConnection, erpRoutes);
+  app.use("/api/admin/inventory", requireSupabaseConnection, inventoryRoutes);
   app.use("/api/admin",           requireSupabaseConnection, adminLeadRoutes);
   app.use("/api/analytics",       analyticsRoutes);
   app.use("/api/orders",          requireSupabaseConnection, orderRoutes);

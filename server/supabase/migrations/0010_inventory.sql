@@ -105,7 +105,7 @@ create table if not exists stock_movements (
   reference_type  text, -- 'receipt' | 'transfer' | 'adjustment' | 'order' | 'reservation' | 'manual'
   reference_id    uuid,
   notes           text,
-  created_by      uuid references users(id),
+  created_by      uuid, -- no hard FK: actor may be a users row OR an employees row (dual actor-table auth)
   created_at      timestamptz not null default now()
 );
 
@@ -127,7 +127,7 @@ create table if not exists stock_reservations (
   status          text not null default 'active' check (status in ('active','released','consumed')),
   reference_type  text not null, -- e.g. 'order'
   reference_id    uuid not null,
-  created_by      uuid references users(id),
+  created_by      uuid, -- no hard FK: actor may be a users row OR an employees row (dual actor-table auth)
   created_at      timestamptz not null default now(),
   released_at     timestamptz,
   consumed_at     timestamptz
@@ -154,7 +154,7 @@ create table if not exists stock_adjustments (
   reason            text not null check (reason in ('damage','scrap','manual_correction','cycle_count','other')),
   note              text,
   movement_id       uuid references stock_movements(id),
-  created_by        uuid references users(id),
+  created_by        uuid, -- no hard FK: actor may be a users row OR an employees row (dual actor-table auth)
   created_at        timestamptz not null default now()
 );
 
@@ -179,7 +179,7 @@ create table if not exists stock_transfers (
   status              text not null default 'draft'
     check (status in ('draft','ready','in_progress','completed','cancelled')),
   notes               text,
-  created_by          uuid references users(id),
+  created_by          uuid, -- no hard FK: actor may be a users row OR an employees row (dual actor-table auth)
   created_at          timestamptz not null default now(),
   updated_at          timestamptz not null default now(),
   check (not (source_warehouse_id = dest_warehouse_id and source_location_id is not distinct from dest_location_id))
@@ -231,7 +231,7 @@ create table if not exists receipts (
   supplier_name        text, -- free text until a suppliers table exists (Purchasing module)
   status               text not null default 'draft' check (status in ('draft','partially_received','received','cancelled')),
   notes                text,
-  created_by           uuid references users(id),
+  created_by           uuid, -- no hard FK: actor may be a users row OR an employees row (dual actor-table auth)
   created_at           timestamptz not null default now(),
   updated_at           timestamptz not null default now()
 );
@@ -298,7 +298,7 @@ create table if not exists inventory_audit_log (
   action      text not null,
   entity_type text not null,
   entity_id   uuid not null,
-  actor_id    uuid references users(id),
+  actor_id    uuid, -- no hard FK: actor may be a users row OR an employees row (dual actor-table auth)
   details     jsonb not null default '{}'::jsonb,
   created_at  timestamptz not null default now()
 );

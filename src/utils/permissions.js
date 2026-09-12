@@ -25,6 +25,8 @@ export const ROLE_PERMISSIONS = {
     "reports.view",
     "erp.view",
     "approvals.view", "approvals.approve", "approvals.reject",
+    "inventory.read", "inventory.adjust", "inventory.transfer", "inventory.receive",
+    "inventory.reservations.manage", "inventory.settings.manage",
   ],
 
   HR: [
@@ -51,6 +53,7 @@ export const ROLE_PERMISSIONS = {
     "attendance.viewOwn", "attendance.clockInOut",
     "leave.viewOwn", "leave.request",
     "leads.view",
+    "inventory.read", "inventory.adjust", "inventory.transfer", "inventory.receive",
   ],
 
   designer: [

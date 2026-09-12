@@ -1,7 +1,7 @@
 services:
   # React (CRA) frontend, served as a static site
   - type: web
-    name: tuah-frontend
+    name: tuah
     runtime: static
     buildCommand: CI=false npm install && CI=false npm run build
     staticPublishPath: ./build
@@ -30,15 +30,9 @@ services:
       - key: SESSION_SECRET
         generateValue: true
       - key: FRONTEND_URL
-        fromService:
-          type: web
-          name: tuah-frontend
-          property: host
+        value: https://tuah.onrender.com,https://tuah-cool.vercel.app
       - key: CORS_ORIGIN
-        fromService:
-          type: web
-          name: tuah-frontend
-          property: host
+        value: https://tuah.onrender.com,https://tuah-cool.vercel.app
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_ANON_KEY
