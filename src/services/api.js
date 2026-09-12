@@ -711,4 +711,85 @@ export const importExportApi = {
   exportLeaveUrl: (filters = {}) => `${API_URL}/api/admin/export/leave.xlsx?${new URLSearchParams(filters)}`,
 };
 
+// ─── Inventory / WMS API ───────────────────────────────────────────────────
+export const inventoryApi = {
+  // Warehouses
+  getWarehouses: (includeInactive = true) =>
+    request(`/api/admin/inventory/warehouses?includeInactive=${includeInactive}`).then((p) => p.warehouses || []),
+  createWarehouse: (payload) => request("/api/admin/inventory/warehouses", { method: "POST", body: payload }).then((p) => p.warehouse),
+  updateWarehouse: (id, payload) => request(`/api/admin/inventory/warehouses/${id}`, { method: "PATCH", body: payload }).then((p) => p.warehouse),
+  setDefaultWarehouse: (id) => request(`/api/admin/inventory/warehouses/${id}/set-default`, { method: "PATCH" }).then((p) => p.warehouse),
+
+  // Locations
+  getLocations: (filters = {}) => {
+    const params = new URLSearchParams(Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== undefined && v !== ""))).toString();
+    return request(`/api/admin/inventory/locations${params ? `?${params}` : ""}`).then((p) => p.locations || []);
+  },
+  createLocation: (payload) => request("/api/admin/inventory/locations", { method: "POST", body: payload }).then((p) => p.location),
+  updateLocation: (id, payload) => request(`/api/admin/inventory/locations/${id}`, { method: "PATCH", body: payload }).then((p) => p.location),
+
+  // Overview / balances / movements
+  getOverview: () => request("/api/admin/inventory/overview").then((p) => p.overview),
+  getBalances: (filters = {}) => {
+    const params = new URLSearchParams(Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== undefined && v !== ""))).toString();
+    return request(`/api/admin/inventory/balances${params ? `?${params}` : ""}`);
+  },
+  getMovements: (filters = {}) => {
+    const params = new URLSearchParams(Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== undefined && v !== ""))).toString();
+    return request(`/api/admin/inventory/movements${params ? `?${params}` : ""}`);
+  },
+  getProductInventoryDetail: (productId) => request(`/api/admin/inventory/products/${productId}/detail`),
+
+  // Reservations
+  getReservations: (filters = {}) => {
+    const params = new URLSearchParams(Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== undefined && v !== ""))).toString();
+    return request(`/api/admin/inventory/reservations${params ? `?${params}` : ""}`);
+  },
+  reserveStock: (payload) => request("/api/admin/inventory/reservations", { method: "POST", body: payload }).then((p) => p.reservation),
+  releaseReservation: (id) => request(`/api/admin/inventory/reservations/${id}/release`, { method: "PATCH" }).then((p) => p.reservation),
+  consumeReservation: (id, payload = {}) => request(`/api/admin/inventory/reservations/${id}/consume`, { method: "PATCH", body: payload }).then((p) => p.reservation),
+
+  // Adjustments
+  getAdjustments: (filters = {}) => {
+    const params = new URLSearchParams(Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== undefined && v !== ""))).toString();
+    return request(`/api/admin/inventory/adjustments${params ? `?${params}` : ""}`);
+  },
+  createAdjustment: (payload) => request("/api/admin/inventory/adjustments", { method: "POST", body: payload }).then((p) => p.adjustment),
+
+  // Transfers
+  getTransfers: (filters = {}) => {
+    const params = new URLSearchParams(Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== undefined && v !== ""))).toString();
+    return request(`/api/admin/inventory/transfers${params ? `?${params}` : ""}`);
+  },
+  getTransfer: (id) => request(`/api/admin/inventory/transfers/${id}`).then((p) => p.transfer),
+  createTransfer: (payload) => request("/api/admin/inventory/transfers", { method: "POST", body: payload }).then((p) => p.transfer),
+  addTransferLine: (id, payload) => request(`/api/admin/inventory/transfers/${id}/lines`, { method: "POST", body: payload }).then((p) => p.line),
+  removeTransferLine: (id, lineId) => request(`/api/admin/inventory/transfers/${id}/lines/${lineId}`, { method: "DELETE" }),
+  setTransferStatus: (id, status) => request(`/api/admin/inventory/transfers/${id}/status`, { method: "PATCH", body: { status } }).then((p) => p.transfer),
+  moveTransferLine: (id, lineId, quantity) =>
+    request(`/api/admin/inventory/transfers/${id}/lines/${lineId}/move`, { method: "POST", body: { quantity } }).then((p) => p.line),
+
+  // Receipts
+  getReceipts: (filters = {}) => {
+    const params = new URLSearchParams(Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== undefined && v !== ""))).toString();
+    return request(`/api/admin/inventory/receipts${params ? `?${params}` : ""}`);
+  },
+  getReceipt: (id) => request(`/api/admin/inventory/receipts/${id}`).then((p) => p.receipt),
+  createReceipt: (payload) => request("/api/admin/inventory/receipts", { method: "POST", body: payload }).then((p) => p.receipt),
+  addReceiptLine: (id, payload) => request(`/api/admin/inventory/receipts/${id}/lines`, { method: "POST", body: payload }).then((p) => p.line),
+  removeReceiptLine: (id, lineId) => request(`/api/admin/inventory/receipts/${id}/lines/${lineId}`, { method: "DELETE" }),
+  setReceiptStatus: (id, status) => request(`/api/admin/inventory/receipts/${id}/status`, { method: "PATCH", body: { status } }).then((p) => p.receipt),
+  receiveLine: (id, lineId, quantity, allowOverReceipt = false) =>
+    request(`/api/admin/inventory/receipts/${id}/lines/${lineId}/receive`, { method: "POST", body: { quantity, allowOverReceipt } }).then((p) => p.line),
+
+  // Replenishment
+  getSettings: (filters = {}) => {
+    const params = new URLSearchParams(Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== undefined && v !== ""))).toString();
+    return request(`/api/admin/inventory/settings${params ? `?${params}` : ""}`).then((p) => p.settings || []);
+  },
+  upsertSettings: (payload) => request("/api/admin/inventory/settings", { method: "PUT", body: payload }).then((p) => p.settings),
+  getReplenishmentCandidates: (warehouseId) =>
+    request(`/api/admin/inventory/replenishment${warehouseId ? `?warehouseId=${warehouseId}` : ""}`).then((p) => p.candidates || []),
+};
+
 export { API_URL };

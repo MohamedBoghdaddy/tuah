@@ -41,6 +41,14 @@ import AdminERPApprovals from "./Pages/AdminERPApprovals";
 import AdminAttendance from "./Pages/AdminAttendance";
 import AdminLeave from "./Pages/AdminLeave";
 import ComingSoonPage from "./Pages/ComingSoonPage";
+import AdminInventoryOverview from "./Pages/Inventory/AdminInventoryOverview";
+import AdminInventoryWarehouses from "./Pages/Inventory/AdminInventoryWarehouses";
+import AdminInventoryStock from "./Pages/Inventory/AdminInventoryStock";
+import AdminInventoryProductDetail from "./Pages/Inventory/AdminInventoryProductDetail";
+import AdminInventoryTransfers from "./Pages/Inventory/AdminInventoryTransfers";
+import AdminInventoryReceipts from "./Pages/Inventory/AdminInventoryReceipts";
+import AdminInventoryAdjustments from "./Pages/Inventory/AdminInventoryAdjustments";
+import AdminInventoryReplenishment from "./Pages/Inventory/AdminInventoryReplenishment";
 
 // Employee self-service pages
 import EmployeeDashboard from "./Pages/EmployeeDashboard";
@@ -287,8 +295,19 @@ const App = () => {
         <Route path="/admin/erp/workflows"  element={<Navigate to="/admin/erp/workflow" replace />} />
         <Route path="/admin/erp/approvals"  element={staffStandalonePage(<AdminERPApprovals />)} />
 
-        {/* ── ERP roadmap placeholder (Inventory, Purchasing, Manufacturing, etc.) ── */}
+        {/* ── ERP roadmap placeholder (Purchasing, Manufacturing, Finance, etc.) ── */}
         <Route path="/admin/coming-soon" element={staffStandalonePage(<ComingSoonPage />)} />
+
+        {/* ── Inventory / WMS (staff with inventory.read) ── */}
+        <Route path="/admin/inventory" element={<Navigate to="/admin/inventory/overview" replace />} />
+        <Route path="/admin/inventory/overview" element={staffStandalonePage(<AdminInventoryOverview />)} />
+        <Route path="/admin/inventory/warehouses" element={staffStandalonePage(<AdminInventoryWarehouses />)} />
+        <Route path="/admin/inventory/stock" element={staffStandalonePage(<AdminInventoryStock />)} />
+        <Route path="/admin/inventory/products/:productId" element={staffStandalonePage(<AdminInventoryProductDetail />)} />
+        <Route path="/admin/inventory/transfers" element={staffStandalonePage(<AdminInventoryTransfers />)} />
+        <Route path="/admin/inventory/receipts" element={staffStandalonePage(<AdminInventoryReceipts />)} />
+        <Route path="/admin/inventory/adjustments" element={staffStandalonePage(<AdminInventoryAdjustments />)} />
+        <Route path="/admin/inventory/replenishment" element={staffStandalonePage(<AdminInventoryReplenishment />)} />
 
         {/* ── Employee Self-Service Portal ── */}
         <Route path="/employee" element={<Navigate to="/employee/dashboard" replace />} />

@@ -12,6 +12,7 @@ const DetailDrawer = ({ open, title, subtitle, onClose, actions, children, width
 
   return (
     <>
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- mouse-only backdrop dismiss; keyboard users already get Escape via useDialogA11y */}
       <div className="ui-drawer-overlay" onClick={onClose} />
       <aside
         className="ui-detail-drawer"

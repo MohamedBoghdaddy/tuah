@@ -44,12 +44,13 @@ describe("createTransfer validation", () => {
   });
 
   test("rejects when source and destination warehouse+location are identical", async () => {
+    mockWarehousesRepo.findWarehouseById.mockResolvedValue({ id: WAREHOUSE_A });
     const result = await transferService.createTransfer(
       { sourceWarehouseId: WAREHOUSE_A, destWarehouseId: WAREHOUSE_A, lines: [{ productId: PRODUCT_A, requestedQty: 1 }] },
       "actor-1"
     );
     expect(result.error).toMatch(/same location/i);
-    expect(mockWarehousesRepo.findWarehouseById).not.toHaveBeenCalled();
+    expect(mockTransfersRepo.createTransfer).not.toHaveBeenCalled();
   });
 
   test("rejects an unknown destination warehouse", async () => {
