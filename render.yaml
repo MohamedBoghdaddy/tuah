@@ -1,0 +1,71 @@
+services:
+  # React (CRA) frontend, served as a static site
+  - type: web
+    name: tuah-frontend
+    runtime: static
+    buildCommand: CI=false npm install && CI=false npm run build
+    staticPublishPath: ./build
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: REACT_APP_SUPABASE_URL
+        sync: false
+      - key: REACT_APP_SUPABASE_PUBLISHABLE_KEY
+        sync: false
+
+  # Express/Supabase backend API
+  - type: web
+    name: tuah-backend
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: tuah-frontend
+          property: host
+      - key: CORS_ORIGIN
+        fromService:
+          type: web
+          name: tuah-frontend
+          property: host
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_PRODUCT_IMAGES_BUCKET
+        value: product-images
+      - key: SUPABASE_PROFILE_IMAGES_BUCKET
+        value: profile-images
+      - key: SUPABASE_EMPLOYEE_IMAGES_BUCKET
+        value: employee-images
+      - key: SUPABASE_EMAIL_ATTACHMENTS_BUCKET
+        value: email-attachments
+      - key: EMAIL_FROM_NAME
+        value: Tuah Commerce
+      - key: EMAIL_FROM_ADDRESS
+        value: noreply@tuahcommerce.com
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: SENDGRID_API_KEY
+        sync: false
