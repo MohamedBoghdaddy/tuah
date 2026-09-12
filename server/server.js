@@ -288,7 +288,7 @@ const configureApp = ({ mongoConnected, sessionStore }) => {
   app.use("/api/cart",            requireSupabaseConnection, cartRoutes);
   app.use("/api/wishlist",        requireSupabaseConnection, wishlistRoutes);
   app.use("/api/customer",        requireMongoConnection, customerRoutes);
-  app.use("/api/support",         requireMongoConnection, supportRoutes);
+  app.use("/api/support",         requireSupabaseConnection, supportRoutes);
   app.use("/api/products",        requireSupabaseConnection, productRoutes);
   app.use("/api/users",           userRoutes);
   app.use("/api/erp",             requireSupabaseConnection, erpRoutes);

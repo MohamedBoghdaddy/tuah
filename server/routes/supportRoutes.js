@@ -1,8 +1,10 @@
 import express from "express";
-import SupportInquiry, {
-  INQUIRY_SOURCES,
+import {
+  createSupportInquiry,
+  listSupportInquiries,
   SUPPORT_TYPES,
-} from "../model/SupportInquiry.js";
+  INQUIRY_SOURCES,
+} from "../models-pg/support.js";
 import { verifyAdmin } from "../middleware/AuthMiddleware.js";
 
 const router = express.Router();
@@ -15,26 +17,26 @@ const cleanString = (value, maxLength = 5000) =>
     .slice(0, maxLength);
 
 const createTicketNumber = () =>
-  `HJ-SUP-${Date.now().toString(36).toUpperCase()}-${Math.random()
+  `TU-SUP-${Date.now().toString(36).toUpperCase()}-${Math.random()
     .toString(36)
     .slice(2, 6)
     .toUpperCase()}`;
 
 const toPublicInquiry = (inquiry) => ({
-  _id: inquiry._id,
-  id: inquiry._id,
-  ticketNumber: inquiry.ticketNumber,
+  _id: inquiry.id,
+  id: inquiry.id,
+  ticketNumber: inquiry.ticket_number,
   name: inquiry.name,
   email: inquiry.email,
   phone: inquiry.phone || "",
   type: inquiry.type,
-  orderNumber: inquiry.orderNumber || "",
+  orderNumber: inquiry.order_number || "",
   message: inquiry.message,
   status: inquiry.status,
   source: inquiry.source,
   metadata: inquiry.metadata || {},
-  createdAt: inquiry.createdAt,
-  updatedAt: inquiry.updatedAt,
+  createdAt: inquiry.created_at,
+  updatedAt: inquiry.updated_at,
 });
 
 router.post("/", async (req, res, next) => {
@@ -68,13 +70,13 @@ router.post("/", async (req, res, next) => {
       });
     }
 
-    const inquiry = await SupportInquiry.create({
-      ticketNumber: createTicketNumber(),
+    const inquiry = await createSupportInquiry({
+      ticket_number: createTicketNumber(),
       name,
       email,
       phone,
       type,
-      orderNumber,
+      order_number: orderNumber,
       message,
       source,
       metadata,
@@ -93,23 +95,9 @@ router.post("/", async (req, res, next) => {
 router.get("/admin", verifyAdmin, async (req, res, next) => {
   try {
     const { status, type, source, page = 1, limit = 50 } = req.query;
-    const filter = {};
-
-    if (status) filter.status = status;
-    if (type) filter.type = type;
-    if (source) filter.source = source;
-
-    const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
-    const safePage = Math.max(Number(page) || 1, 1);
-
-    const [inquiries, total] = await Promise.all([
-      SupportInquiry.find(filter)
-        .sort({ createdAt: -1 })
-        .skip((safePage - 1) * safeLimit)
-        .limit(safeLimit)
-        .lean(),
-      SupportInquiry.countDocuments(filter),
-    ]);
+    const { inquiries, total, page: safePage, limit: safeLimit } = await listSupportInquiries({
+      status, type, source, page, limit,
+    });
 
     return res.json({
       success: true,

@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { isSupabaseConfigured } from "../config/supabase.js";
 import {
   listErpApps, createErpApp, updateErpApp, deleteErpApp,
@@ -167,8 +168,10 @@ const buildIntegrationStatus = async () => {
     {
       key: "mongodb",
       name: "MongoDB Atlas",
-      status: "active",
-      message: "MongoDB still backs Attendance/Leave/ERP-adjacent legacy data pending later migration phases.",
+      status: mongoose.connection.readyState === 1 ? "active" : "error",
+      message: mongoose.connection.readyState === 1
+        ? "MongoDB is connected — still backs the customer address book, payment methods, and the guest cart session store."
+        : "MongoDB connection is unavailable.",
     },
     {
       key: "supabase",

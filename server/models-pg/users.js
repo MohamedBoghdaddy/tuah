@@ -64,6 +64,12 @@ export const listUsers = async ({ role } = {}) => {
   return data || [];
 };
 
+export const countUsersByRole = async (role) => {
+  const { count, error } = await supabaseAdmin.from(TABLE).select("id", { count: "exact", head: true }).eq("role", role);
+  throwIfError(error, "Failed to count users.");
+  return count || 0;
+};
+
 export const searchUsersByUsername = async (usernameQuery) => {
   const { data, error } = await supabaseAdmin
     .from(TABLE)

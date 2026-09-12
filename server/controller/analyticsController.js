@@ -1,7 +1,5 @@
-import mongoose from "mongoose";
-import User from "../model/usermodel.js";
-import ApprovalRequest from "../model/ApprovalRequest.js";
 import { isSupabaseConfigured } from "../config/supabase.js";
+import { countUsersByRole } from "../models-pg/users.js";
 import { countActiveProducts, countLowStockActiveProducts, listLowStockActiveProducts } from "../models-pg/products.js";
 import {
   countOrdersExcludingStatus,
@@ -15,15 +13,15 @@ import {
 } from "../models-pg/orders.js";
 import { countLeadsByStatus, countLeadsExcludingStatuses, listRecentLeadsExcludingStatuses } from "../models-pg/leads.js";
 import { countQuotesByStatus, countQuotesByStatuses, countQuotesExcludingStatuses } from "../models-pg/quotes.js";
+import { countApprovalRequestsByStatus } from "../models-pg/approvals.js";
 
 // ─── Shared helper ────────────────────────────────────────────────────────────
 const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const nMonthsAgo = (n) => { const d = new Date(); d.setMonth(d.getMonth() - n); return d; };
 
-// Orders/Products/Users now live in Postgres; Leads/Quotes/Approvals are
-// still MongoDB (not yet migrated) — these dashboards blend both, so both
-// databases need to be up for a complete result.
-const isDbConnected = () => mongoose.connection.readyState === 1 && isSupabaseConfigured();
+// Every data source this controller reads (Users, Products, Orders, Leads,
+// Quotes, Approvals) now lives in Supabase Postgres.
+const isDbConnected = () => isSupabaseConfigured();
 
 // ─── GET /api/analytics ───────────────────────────────────────────────────────
 // Kept for backward compat — public-safe subset of dashboard summary.
@@ -35,7 +33,7 @@ export const Analytics = async (req, res) => {
 
     const [totalOrders, totalCustomers, totalProducts, lowStock] = await Promise.all([
       countOrdersExcludingStatus("cancelled"),
-      User.countDocuments({ role: "customer" }),
+      countUsersByRole("customer"),
       countActiveProducts(),
       countLowStockActiveProducts(),
     ]);
@@ -87,9 +85,9 @@ export const getDashboardSummary = async (req, res) => {
       monthlyRevenue,
     ] = await Promise.all([
       countOrdersExcludingStatus("cancelled"),
-      User.countDocuments({ role: "customer" }),
+      countUsersByRole("customer"),
       countQuotesByStatuses(["draft", "pending", "sent"]),
-      ApprovalRequest.countDocuments({ status: "pending" }),
+      countApprovalRequestsByStatus("pending"),
       listLowStockActiveProducts(5),
       listRecentOrdersExcludingStatus("cancelled", 5),
       listRecentLeadsExcludingStatuses(["won", "lost", "archived"], 5),
@@ -160,7 +158,7 @@ export const getAnalyticsOverview = async (req, res) => {
       countOrdersByStatusGroup(),
       sumOrderTotalsExcludingStatus("cancelled"),
       countOrdersExcludingStatus("cancelled"),
-      User.countDocuments({ role: "customer" }),
+      countUsersByRole("customer"),
       countLowStockActiveProducts(),
 
       // Lead conversion (won/total non-archived)
