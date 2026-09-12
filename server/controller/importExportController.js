@@ -1,8 +1,18 @@
 import xlsx from "xlsx";
-import Employee from "../model/employeemodel.js";
-import AttendanceRecord from "../model/AttendanceRecord.js";
-import LeaveRequest from "../model/LeaveRequest.js";
-import User from "../model/usermodel.js";
+import {
+  listEmployees as listEmployeesRows,
+  findEmployeeByEmail,
+  createEmployee as createEmployeeRow,
+  updateEmployee as updateEmployeeRow,
+} from "../models-pg/employees.js";
+import {
+  listAttendanceForExport,
+  upsertAttendanceForDate,
+} from "../models-pg/attendance.js";
+import {
+  listLeaveForExport,
+  createLeaveRequest as createLeaveRequestRow,
+} from "../models-pg/leave.js";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -38,18 +48,18 @@ const sendXlsx = (res, data, sheetName, filename) => {
 
 export const exportEmployees = async (req, res) => {
   try {
-    const employees = await Employee.find().select("-password -__v").lean();
+    const employees = await listEmployeesRows();
     const rows = employees.map((e) => ({
-      id: e._id,
+      id: e.id,
       firstName: e.fname,
       lastName: e.lname,
       email: e.email,
       department: e.department,
-      jobTitle: e.jobTitle || "",
+      jobTitle: e.job_title || "",
       role: e.role,
       status: e.status,
       phone: e.phone || "",
-      createdAt: e.createdAt,
+      createdAt: e.created_at,
     }));
     sendXlsx(res, rows, "Employees", "employees.xlsx");
   } catch (err) {
@@ -59,20 +69,16 @@ export const exportEmployees = async (req, res) => {
 
 export const exportAttendanceXlsx = async (req, res) => {
   try {
-    const filter = {};
-    if (req.query.from) filter["date"] = { ...filter.date, $gte: new Date(req.query.from) };
-    if (req.query.to)   filter["date"] = { ...filter.date, $lte: new Date(req.query.to) };
-
-    const records = await AttendanceRecord.find(filter).sort({ date: -1 }).lean();
+    const records = await listAttendanceForExport({ from: req.query.from, to: req.query.to });
     const rows = records.map((r) => ({
-      employeeName: r.employeeName,
-      employeeEmail: r.employeeEmail,
+      employeeName: r.employee_name,
+      employeeEmail: r.employee_email,
       department: r.department,
-      date: r.date ? r.date.toISOString().split("T")[0] : "",
-      clockIn: r.clockIn ? r.clockIn.toISOString() : "",
-      clockOut: r.clockOut ? r.clockOut.toISOString() : "",
-      breakMinutes: r.breakMinutes,
-      totalWorkedMinutes: r.totalWorkedMinutes,
+      date: r.date || "",
+      clockIn: r.clock_in || "",
+      clockOut: r.clock_out || "",
+      breakMinutes: r.break_minutes,
+      totalWorkedMinutes: r.total_worked_minutes,
       status: r.status,
       source: r.source,
       notes: r.notes || "",
@@ -85,18 +91,18 @@ export const exportAttendanceXlsx = async (req, res) => {
 
 export const exportLeaveXlsx = async (req, res) => {
   try {
-    const records = await LeaveRequest.find().sort({ createdAt: -1 }).lean();
+    const records = await listLeaveForExport();
     const rows = records.map((r) => ({
-      employeeName: r.employeeName,
-      employeeEmail: r.employeeEmail,
+      employeeName: r.employee_name,
+      employeeEmail: r.employee_email,
       department: r.department,
       type: r.type,
-      startDate: r.startDate ? r.startDate.toISOString().split("T")[0] : "",
-      endDate: r.endDate ? r.endDate.toISOString().split("T")[0] : "",
+      startDate: r.start_date || "",
+      endDate: r.end_date || "",
       status: r.status,
       reason: r.reason || "",
-      rejectionReason: r.rejectionReason || "",
-      createdAt: r.createdAt,
+      rejectionReason: r.rejection_reason || "",
+      createdAt: r.created_at,
     }));
     sendXlsx(res, rows, "LeaveRequests", "leave_requests.xlsx");
   } catch (err) {
@@ -179,20 +185,19 @@ const importEmployees = async (rows) => {
     }
 
     try {
-      const existing = await Employee.findOne({ email });
+      const existing = await findEmployeeByEmail(email);
       if (existing) {
-        existing.fname = fname;
-        existing.lname = lname;
-        existing.department = department;
-        if (row.jobTitle || row.job_title) existing.jobTitle = row.jobTitle || row.job_title;
-        if (row.phone) existing.phone = String(row.phone);
-        await existing.save();
+        await updateEmployeeRow(existing.id, {
+          fname, lname, department,
+          ...(row.jobTitle || row.job_title ? { job_title: row.jobTitle || row.job_title } : {}),
+          ...(row.phone ? { phone: String(row.phone) } : {}),
+        });
         result.updated++;
         result.rows.push({ row: rowNum, status: "updated", email });
       } else {
-        await Employee.create({
+        await createEmployeeRow({
           fname, lname, email, department,
-          jobTitle: row.jobTitle || row.job_title || "",
+          job_title: row.jobTitle || row.job_title || "",
           phone: row.phone ? String(row.phone) : "",
           role: "readonly",
           password: "ChangeMe123!",
@@ -226,33 +231,27 @@ const importAttendance = async (rows) => {
     }
 
     try {
-      const employee = await Employee.findOne({ email }).lean();
+      const employee = await findEmployeeByEmail(email);
       if (!employee) {
         result.skipped++;
         result.rows.push({ row: rowNum, status: "skipped", reason: `No employee found with email ${email}` });
         continue;
       }
 
-      const date = new Date(dateRaw); date.setHours(0,0,0,0);
-      const parseTime = (v) => v ? new Date(v) : undefined;
+      const date = new Date(dateRaw);
+      const parseTime = (v) => (v ? new Date(v).toISOString() : undefined);
 
-      await AttendanceRecord.findOneAndUpdate(
-        { employeeId: employee._id, date },
-        {
-          $set: {
-            employeeName: `${employee.fname} ${employee.lname}`,
-            employeeEmail: employee.email,
-            department: employee.department,
-            clockIn: parseTime(row.clockIn || row.clock_in || row.ClockIn),
-            clockOut: parseTime(row.clockOut || row.clock_out || row.ClockOut),
-            breakMinutes: parseInt(row.breakMinutes || row.break_minutes || 0) || 0,
-            status: (row.status || row.Status || "present").toLowerCase(),
-            source: "import",
-            notes: row.notes || row.Notes || "",
-          },
-        },
-        { upsert: true, new: true }
-      );
+      await upsertAttendanceForDate(employee.id, date, {
+        employee_name: `${employee.fname} ${employee.lname}`,
+        employee_email: employee.email,
+        department: employee.department,
+        clock_in: parseTime(row.clockIn || row.clock_in || row.ClockIn),
+        clock_out: parseTime(row.clockOut || row.clock_out || row.ClockOut),
+        break_minutes: parseInt(row.breakMinutes || row.break_minutes || 0) || 0,
+        status: (row.status || row.Status || "present").toLowerCase(),
+        source: "import",
+        notes: row.notes || row.Notes || "",
+      });
 
       result.inserted++;
       result.rows.push({ row: rowNum, status: "inserted", email, date: date.toISOString().split("T")[0] });
@@ -284,21 +283,21 @@ const importLeave = async (rows) => {
     }
 
     try {
-      const employee = await Employee.findOne({ email }).lean();
+      const employee = await findEmployeeByEmail(email);
       if (!employee) {
         result.skipped++;
         result.rows.push({ row: rowNum, status: "skipped", reason: `No employee found with email ${email}` });
         continue;
       }
 
-      await LeaveRequest.create({
-        employeeId: employee._id,
-        employeeName: `${employee.fname} ${employee.lname}`,
-        employeeEmail: employee.email,
+      await createLeaveRequestRow({
+        employee_id: employee.id,
+        employee_name: `${employee.fname} ${employee.lname}`,
+        employee_email: employee.email,
         department: employee.department,
         type: type.toLowerCase().replace(/\s+/g, "_"),
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
+        start_date: new Date(startDate).toISOString().slice(0, 10),
+        end_date: new Date(endDate).toISOString().slice(0, 10),
         reason: row.reason || row.Reason || "",
         status: (row.status || row.Status || "pending").toLowerCase(),
       });

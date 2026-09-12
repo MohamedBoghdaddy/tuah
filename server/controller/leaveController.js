@@ -1,22 +1,36 @@
-import LeaveRequest from "../model/LeaveRequest.js";
-import AttendanceRecord from "../model/AttendanceRecord.js";
-import Employee from "../model/employeemodel.js";
+import {
+  listLeaveRequests as listLeaveRequestsRows,
+  listLeaveForExport,
+  findLeaveById,
+  findLeaveForEmployee,
+  listMyLeaveRequests,
+  createLeaveRequest as createLeaveRequestRow,
+  updateLeaveRequest as updateLeaveRequestRow,
+  addApprovalStep,
+} from "../models-pg/leave.js";
+import { upsertAttendanceForDate } from "../models-pg/attendance.js";
 import { resolveEmployee } from "../utils/resolveEmployee.js";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-const buildFilter = (query) => {
-  const filter = {};
-  if (query.employeeId) filter.employeeId = query.employeeId;
-  if (query.department) filter.department = query.department;
-  if (query.status)     filter.status = query.status;
-  if (query.type)       filter.type = query.type;
-  if (query.from || query.to) {
-    filter.startDate = {};
-    if (query.from) filter.startDate.$gte = new Date(query.from);
-    if (query.to)   filter.startDate.$lte = new Date(query.to);
-  }
-  return filter;
+const buildFilter = (query) => ({
+  employeeId: query.employeeId,
+  department: query.department,
+  status: query.status,
+  type: query.type,
+  from: query.from,
+  to: query.to,
+});
+
+// Approve/reject/escalate are performed by a logged-in actor (almost always a
+// `users` row — Employee login is unused in this app, see AuthMiddleware).
+// decided_by/current_approver_id/assignee_id all reference employees(id), so
+// the acting user must be resolved to THEIR OWN employee record first; if
+// they have none linked, we store null rather than a mismatched users.id
+// (which would violate the foreign key).
+const resolveActingEmployeeId = async (actor) => {
+  const emp = await resolveEmployee(actor);
+  return emp ? emp.id : null;
 };
 
 // ── Employee: list own requests ────────────────────────────────────────────
@@ -24,12 +38,9 @@ export const getMyLeaveRequests = async (req, res) => {
   try {
     const actor = req.actor || req.employee || req.user;
     const emp = await resolveEmployee(actor);
+    const employeeIdFilter = emp ? emp.id : actor.id;
 
-    // Search by either the Employee._id (if resolved) or the raw actor._id
-    const employeeIdFilter = emp ? emp._id : actor._id;
-    const requests = await LeaveRequest.find({ employeeId: employeeIdFilter })
-      .sort({ createdAt: -1 })
-      .lean();
+    const requests = await listMyLeaveRequests(employeeIdFilter);
     res.json({ success: true, requests });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -46,25 +57,24 @@ export const submitLeaveRequest = async (req, res) => {
       return res.status(400).json({ success: false, message: "type, startDate, endDate are required." });
     }
 
-    // Resolve to Employee for consistent ID storage
     const emp = await resolveEmployee(actor);
-    const storedId   = emp ? emp._id : actor._id;
+    const storedId = emp ? emp.id : actor.id;
     const storedName = emp
       ? `${emp.fname} ${emp.lname}`
-      : (actor.firstName ? `${actor.firstName} ${actor.lastName}` : (actor.fname ? `${actor.fname} ${actor.lname}` : actor.username || ""));
+      : (actor.first_name ? `${actor.first_name} ${actor.last_name}` : (actor.fname ? `${actor.fname} ${actor.lname}` : actor.username || ""));
     const storedEmail = actor.email || emp?.email || "";
-    const storedDept  = actor.department || emp?.department || "";
+    const storedDept = actor.department || emp?.department || "";
 
-    const request = await LeaveRequest.create({
-      employeeId: storedId,
-      employeeName: storedName,
-      employeeEmail: storedEmail,
+    const request = await createLeaveRequestRow({
+      employee_id: storedId,
+      employee_name: storedName,
+      employee_email: storedEmail,
       department: storedDept,
       type,
-      startDate: new Date(startDate),
-      endDate: new Date(endDate),
-      leaveEarlyTime,
-      hoursRequested,
+      start_date: new Date(startDate).toISOString().slice(0, 10),
+      end_date: new Date(endDate).toISOString().slice(0, 10),
+      leave_early_time: leaveEarlyTime,
+      hours_requested: hoursRequested,
       reason,
     });
 
@@ -79,17 +89,16 @@ export const cancelLeaveRequest = async (req, res) => {
   try {
     const actor = req.actor || req.employee || req.user;
     const emp = await resolveEmployee(actor);
-    const employeeIdFilter = emp ? emp._id : actor._id;
-    const request = await LeaveRequest.findOne({ _id: req.params.id, employeeId: employeeIdFilter });
+    const employeeIdFilter = emp ? emp.id : actor.id;
+    const request = await findLeaveForEmployee(req.params.id, employeeIdFilter);
 
     if (!request) return res.status(404).json({ success: false, message: "Request not found." });
     if (request.status !== "pending") {
       return res.status(400).json({ success: false, message: "Only pending requests can be cancelled." });
     }
 
-    request.status = "cancelled";
-    await request.save();
-    res.json({ success: true, request });
+    const updated = await updateLeaveRequestRow(req.params.id, { status: "cancelled" });
+    res.json({ success: true, request: updated });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -99,15 +108,10 @@ export const cancelLeaveRequest = async (req, res) => {
 export const listLeaveRequests = async (req, res) => {
   try {
     const filter = buildFilter(req.query);
-    const page  = Math.max(1, parseInt(req.query.page)  || 1);
+    const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(200, parseInt(req.query.limit) || 50);
-    const skip  = (page - 1) * limit;
 
-    const [requests, total] = await Promise.all([
-      LeaveRequest.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
-      LeaveRequest.countDocuments(filter),
-    ]);
-
+    const { requests, total } = await listLeaveRequestsRows({ ...filter, page, limit });
     res.json({ success: true, requests, total, page, limit });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -117,7 +121,7 @@ export const listLeaveRequests = async (req, res) => {
 // ── Admin/HR/Manager: get one request ─────────────────────────────────────
 export const getLeaveRequest = async (req, res) => {
   try {
-    const request = await LeaveRequest.findById(req.params.id).lean();
+    const request = await findLeaveById(req.params.id);
     if (!request) return res.status(404).json({ success: false, message: "Request not found." });
     res.json({ success: true, request });
   } catch (err) {
@@ -129,40 +133,34 @@ export const getLeaveRequest = async (req, res) => {
 export const approveLeaveRequest = async (req, res) => {
   try {
     const actor = req.actor || req.employee || req.user;
-    const request = await LeaveRequest.findById(req.params.id);
+    const request = await findLeaveById(req.params.id);
 
     if (!request) return res.status(404).json({ success: false, message: "Request not found." });
     if (!["pending", "escalated"].includes(request.status)) {
       return res.status(400).json({ success: false, message: "Request cannot be approved in its current state." });
     }
 
-    request.status = "approved";
-    request.decidedBy = actor._id;
-    request.decidedAt = new Date();
-    await request.save();
+    const decidedBy = await resolveActingEmployeeId(actor);
+    const updated = await updateLeaveRequestRow(req.params.id, {
+      status: "approved",
+      decided_by: decidedBy,
+      decided_at: new Date().toISOString(),
+    });
 
     // Mark attendance as "leave" for each day in the range
-    const start = new Date(request.startDate);
-    const end   = new Date(request.endDate);
+    const start = new Date(request.start_date);
+    const end = new Date(request.end_date);
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      const day = new Date(d); day.setHours(0,0,0,0);
-      await AttendanceRecord.findOneAndUpdate(
-        { employeeId: request.employeeId, date: day },
-        {
-          $setOnInsert: {
-            employeeName: request.employeeName,
-            employeeEmail: request.employeeEmail,
-            department: request.department,
-            date: day,
-            source: "system",
-          },
-          $set: { status: "leave" },
-        },
-        { upsert: true }
-      );
+      await upsertAttendanceForDate(request.employee_id, new Date(d), {
+        employee_name: request.employee_name,
+        employee_email: request.employee_email,
+        department: request.department,
+        status: "leave",
+        source: "system",
+      });
     }
 
-    res.json({ success: true, request });
+    res.json({ success: true, request: updated });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -178,19 +176,21 @@ export const rejectLeaveRequest = async (req, res) => {
       return res.status(400).json({ success: false, message: "A rejection reason is required." });
     }
 
-    const request = await LeaveRequest.findById(req.params.id);
+    const request = await findLeaveById(req.params.id);
     if (!request) return res.status(404).json({ success: false, message: "Request not found." });
     if (!["pending", "escalated"].includes(request.status)) {
       return res.status(400).json({ success: false, message: "Request cannot be rejected in its current state." });
     }
 
-    request.status = "rejected";
-    request.decidedBy = actor._id;
-    request.decidedAt = new Date();
-    request.rejectionReason = rejectionReason;
-    await request.save();
+    const decidedBy = await resolveActingEmployeeId(actor);
+    const updated = await updateLeaveRequestRow(req.params.id, {
+      status: "rejected",
+      decided_by: decidedBy,
+      decided_at: new Date().toISOString(),
+      rejection_reason: rejectionReason,
+    });
 
-    res.json({ success: true, request });
+    res.json({ success: true, request: updated });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -202,25 +202,29 @@ export const escalateLeaveRequest = async (req, res) => {
     const actor = req.actor || req.employee || req.user;
     const { nextApproverId } = req.body;
 
-    const request = await LeaveRequest.findById(req.params.id);
+    const request = await findLeaveById(req.params.id);
     if (!request) return res.status(404).json({ success: false, message: "Request not found." });
     if (request.status !== "pending") {
       return res.status(400).json({ success: false, message: "Only pending requests can be escalated." });
     }
 
-    request.status = "escalated";
-    if (nextApproverId) request.currentApproverId = nextApproverId;
-    request.approvalSteps.push({
+    await updateLeaveRequestRow(req.params.id, {
+      status: "escalated",
+      ...(nextApproverId ? { current_approver_id: nextApproverId } : {}),
+    });
+
+    const actingEmployeeId = await resolveActingEmployeeId(actor);
+    const actingName = actor.fname ? `${actor.fname} ${actor.lname}` : (actor.username || `${actor.first_name || ""} ${actor.last_name || ""}`.trim());
+    const updated = await addApprovalStep(req.params.id, {
       stepName: "Escalated",
-      assigneeId: actor._id,
-      assigneeName: actor.fname ? `${actor.fname} ${actor.lname}` : actor.username,
+      assigneeId: actingEmployeeId,
+      assigneeName: actingName,
       status: "skipped",
-      decidedAt: new Date(),
+      decidedAt: new Date().toISOString(),
       comment: req.body.comment || "Escalated for higher approval",
     });
-    await request.save();
 
-    res.json({ success: true, request });
+    res.json({ success: true, request: updated });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -230,7 +234,7 @@ export const escalateLeaveRequest = async (req, res) => {
 export const exportLeaveRequests = async (req, res) => {
   try {
     const filter = buildFilter(req.query);
-    const requests = await LeaveRequest.find(filter).sort({ createdAt: -1 }).lean();
+    const requests = await listLeaveForExport(filter);
     res.json({ success: true, requests });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

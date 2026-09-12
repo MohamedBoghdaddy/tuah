@@ -266,13 +266,13 @@ const configureApp = ({ mongoConnected, sessionStore }) => {
 
   // ── Specific routes first (more specific path → mounted before catch-alls) ──────
   // ── Attendance & Leave ────────────────────────────────────────────────────
-  app.use("/api/attendance",      requireMongoConnection, attendanceRoutes);
-  app.use("/api/admin/attendance",requireMongoConnection, attendanceRoutes);
-  app.use("/api/leave",           requireMongoConnection, leaveRoutes);
-  app.use("/api/admin/leave",     requireMongoConnection, leaveRoutes);
-  // ── Import / Export ───────────────────────────────────────────────────────
-  app.use("/api/admin/export",  requireMongoConnection, importExportRoutes);
-  app.use("/api/admin/import",  requireMongoConnection, importExportRoutes);
+  app.use("/api/attendance",      requireSupabaseConnection, attendanceRoutes);
+  app.use("/api/admin/attendance",requireSupabaseConnection, attendanceRoutes);
+  app.use("/api/leave",           requireSupabaseConnection, leaveRoutes);
+  app.use("/api/admin/leave",     requireSupabaseConnection, leaveRoutes);
+  // ── Import / Export (employees/attendance/leave sheets — all Postgres now) ─
+  app.use("/api/admin/export",  requireSupabaseConnection, importExportRoutes);
+  app.use("/api/admin/import",  requireSupabaseConnection, importExportRoutes);
 
   // ── Specific routes first (more specific path → mounted before catch-alls) ──
   app.use("/api/admin/products",  requireSupabaseConnection, adminProductRoutes);
@@ -280,9 +280,9 @@ const configureApp = ({ mongoConnected, sessionStore }) => {
   app.use("/api/admin/orders",    requireSupabaseConnection, adminOrderRoutes);
   app.use("/api/admin/dashboard", requireMongoConnection, analyticsRoutes);
   app.use("/api/admin/analytics", requireMongoConnection, analyticsRoutes);
-  app.use("/api/admin/emails",    requireMongoConnection, emailAdminRoutes);
-  app.use("/api/admin/erp",       requireMongoConnection, erpRoutes);
-  app.use("/api/admin",           requireMongoConnection, adminLeadRoutes);
+  app.use("/api/admin/emails",    requireSupabaseConnection, emailAdminRoutes);
+  app.use("/api/admin/erp",       requireSupabaseConnection, erpRoutes);
+  app.use("/api/admin",           requireSupabaseConnection, adminLeadRoutes);
   app.use("/api/analytics",       analyticsRoutes);
   app.use("/api/orders",          requireSupabaseConnection, orderRoutes);
   app.use("/api/cart",            requireSupabaseConnection, cartRoutes);
@@ -291,7 +291,7 @@ const configureApp = ({ mongoConnected, sessionStore }) => {
   app.use("/api/support",         requireMongoConnection, supportRoutes);
   app.use("/api/products",        requireSupabaseConnection, productRoutes);
   app.use("/api/users",           userRoutes);
-  app.use("/api/erp",             requireMongoConnection, erpRoutes);
+  app.use("/api/erp",             requireSupabaseConnection, erpRoutes);
   app.use("/api/settings",        settingsRoutes);
   // Hybrid storage routes (Supabase Storage + email outbox)
   app.use("/api", requireMongoConnection, uploadRoutes);

@@ -1,20 +1,35 @@
-import mongoose from "mongoose";
-import Department from "../model/Department.js";
-import JobPosition from "../model/JobPosition.js";
-import ERPEmployee from "../model/ERPEmployee.js";
-import ERPApp from "../model/ERPApp.js";
-import ApprovalRequest from "../model/ApprovalRequest.js";
-import ApprovalStep from "../model/ApprovalStep.js";
-import ERPSchemaRelation from "../model/ERPSchemaRelation.js";
-import ERPIntegrationStatus from "../model/ERPIntegrationStatus.js";
+import { isSupabaseConfigured } from "../config/supabase.js";
+import {
+  listErpApps, createErpApp, updateErpApp, deleteErpApp,
+  listDepartments,
+  createDepartment as createDepartmentRow,
+  updateDepartment as updateDepartmentRow,
+  deleteDepartment as deleteDepartmentRow,
+  listJobPositions,
+  createJobPosition as createJobPositionRow,
+  updateJobPosition as updateJobPositionRow,
+  deleteJobPosition as deleteJobPositionRow,
+  listErpEmployees, listActiveErpEmployees, createErpEmployee, updateErpEmployee, deleteErpEmployee,
+  upsertIntegrationStatus,
+  listSchemaRelations,
+  createSchemaRelation as createSchemaRelationRow,
+  updateSchemaRelation as updateSchemaRelationRow,
+  deleteSchemaRelation as deleteSchemaRelationRow,
+  countErpApps, countDepartments, countJobPositions, countErpEmployees,
+} from "../models-pg/erp.js";
+import {
+  listApprovalRequests, findApprovalRequestById, createApprovalRequest as createApprovalRequestRow,
+  updateApprovalRequest as updateApprovalRequestRow, createApprovalStep, countApprovalRequestsByStatus,
+} from "../models-pg/approvals.js";
 import { countProductsExcludingStatus } from "../models-pg/products.js";
 import { countEmployeesExcludingStatus, listEmployeesExcludingStatus } from "../models-pg/employees.js";
-import Lead from "../model/Lead.js";
-import Quote from "../model/Quote.js";
+import { countLeadsExcludingStatuses } from "../models-pg/leads.js";
+import { countQuotesExcludingStatuses } from "../models-pg/quotes.js";
 
-const isDbConnected = () => mongoose.connection.readyState === 1;
+// The whole ERP module now lives in Postgres (Supabase), not MongoDB.
+const isDbConnected = () => isSupabaseConfigured();
 
-// ─── Static demo data (used when MongoDB is not connected) ───────────────────
+// ─── Static demo data (used when the ERP tables are empty) ───────────────────
 
 const demoERPApps = [
   { _id: "app_base", name: "Base / Users", slug: "base", layer: "primary", icon: "manage_accounts", purpose: "Manages users, roles, permissions, and company structure", dependsOn: [], usedBy: ["contacts", "employees", "sales", "accounting"], mainTables: ["users", "roles", "permissions", "companies"], workflowSummary: "User creation → Role assignment → Module access", status: "active" },
@@ -117,48 +132,30 @@ const ensureDb = (res) => {
   return false;
 };
 
-const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isValidId = (id) => typeof id === "string" && UUID_RE.test(id);
 
 export const getERPOverview = async (req, res) => {
   try {
     if (!ensureDb(res)) return;
     const [
-      apps,
-      departments,
-      jobPositions,
-      erpEmployees,
-      employees,
-      approvals,
-      products,
-      leads,
-      quotes,
+      apps, departments, jobPositions, erpEmployees, employees, approvals, products, leads, quotes,
     ] = await Promise.all([
-      ERPApp.countDocuments(),
-      Department.countDocuments(),
-      JobPosition.countDocuments(),
-      ERPEmployee.countDocuments(),
+      countErpApps(),
+      countDepartments(),
+      countJobPositions(),
+      countErpEmployees(),
       countEmployeesExcludingStatus("inactive"),
-      ApprovalRequest.countDocuments({ status: "pending" }),
+      countApprovalRequestsByStatus("pending"),
       countProductsExcludingStatus("archived"),
-      Lead.countDocuments({ status: { $nin: ["archived", "lost"] } }),
-      Quote.countDocuments({ status: { $nin: ["cancelled", "expired"] } }),
+      countLeadsExcludingStatuses(["archived", "lost"]),
+      countQuotesExcludingStatuses(["cancelled", "expired"]),
     ]);
 
     const integrations = await buildIntegrationStatus();
     return res.json({
       success: true,
-      overview: {
-        apps,
-        departments,
-        jobPositions,
-        erpEmployees,
-        employees,
-        pendingApprovals: approvals,
-        products,
-        activeLeads: leads,
-        quotes,
-        integrations,
-      },
+      overview: { apps, departments, jobPositions, erpEmployees, employees, pendingApprovals: approvals, products, activeLeads: leads, quotes, integrations },
     });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -170,20 +167,16 @@ const buildIntegrationStatus = async () => {
     {
       key: "mongodb",
       name: "MongoDB Atlas",
-      status: isDbConnected() ? "active" : "error",
-      message: isDbConnected() ? "MongoDB is connected." : "MongoDB connection is unavailable.",
+      status: "active",
+      message: "MongoDB still backs Attendance/Leave/ERP-adjacent legacy data pending later migration phases.",
     },
     {
       key: "supabase",
-      name: "Supabase Storage/Outbox",
-      status:
-        process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
-          ? "active"
-          : "not_configured",
-      message:
-        process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
-          ? "Supabase backend client is configured."
-          : "SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing.",
+      name: "Supabase Database/Storage/Outbox",
+      status: isSupabaseConfigured() ? "active" : "not_configured",
+      message: isSupabaseConfigured()
+        ? "Supabase backend client is configured."
+        : "SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing.",
     },
     {
       key: "email_delivery",
@@ -194,21 +187,11 @@ const buildIntegrationStatus = async () => {
         process.env.SENDGRID_API_KEY
           ? "active"
           : "not_configured",
-      message:
-        "Configure SMTP_*, RESEND_API_KEY, or SENDGRID_API_KEY to send queued emails.",
+      message: "Configure SMTP_*, RESEND_API_KEY, or SENDGRID_API_KEY to send queued emails.",
     },
   ];
 
-  await Promise.all(
-    statuses.map((item) =>
-      ERPIntegrationStatus.findOneAndUpdate(
-        { key: item.key },
-        { ...item, checkedAt: new Date() },
-        { upsert: true, new: true }
-      )
-    )
-  );
-
+  await Promise.all(statuses.map((item) => upsertIntegrationStatus(item)));
   return statuses;
 };
 
@@ -217,10 +200,8 @@ const buildIntegrationStatus = async () => {
 export const getERPApps = async (req, res) => {
   try {
     if (isDbConnected()) {
-      const apps = await ERPApp.find().sort({ layer: 1, name: 1 });
-      if (apps.length > 0) {
-        return res.json({ success: true, data: apps });
-      }
+      const apps = await listErpApps();
+      if (apps.length > 0) return res.json({ success: true, data: apps });
     }
     res.json({ success: true, data: demoERPApps, source: "demo" });
   } catch (err) {
@@ -230,8 +211,8 @@ export const getERPApps = async (req, res) => {
 
 export const createERPApp = async (req, res) => {
   try {
-    if (!isDbConnected()) return res.status(503).json({ success: false, message: "Database unavailable." });
-    const app = await ERPApp.create(req.body);
+    if (!ensureDb(res)) return;
+    const app = await createErpApp(req.body);
     res.status(201).json({ success: true, data: app });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
@@ -240,8 +221,8 @@ export const createERPApp = async (req, res) => {
 
 export const updateERPApp = async (req, res) => {
   try {
-    if (!isDbConnected()) return res.status(503).json({ success: false, message: "Database unavailable." });
-    const app = await ERPApp.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    if (!ensureDb(res)) return;
+    const app = await updateErpApp(req.params.id, req.body);
     if (!app) return res.status(404).json({ success: false, message: "App not found." });
     res.json({ success: true, data: app });
   } catch (err) {
@@ -251,8 +232,8 @@ export const updateERPApp = async (req, res) => {
 
 export const deleteERPApp = async (req, res) => {
   try {
-    if (!isDbConnected()) return res.status(503).json({ success: false, message: "Database unavailable." });
-    await ERPApp.findByIdAndDelete(req.params.id);
+    if (!ensureDb(res)) return;
+    await deleteErpApp(req.params.id);
     res.json({ success: true, message: "App deleted." });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -264,7 +245,7 @@ export const deleteERPApp = async (req, res) => {
 export const getDepartments = async (req, res) => {
   try {
     if (isDbConnected()) {
-      const depts = await Department.find().sort({ name: 1 });
+      const depts = await listDepartments();
       if (depts.length > 0) return res.json({ success: true, data: depts });
     }
     res.json({ success: true, data: demoDepartments, source: "demo" });
@@ -275,8 +256,8 @@ export const getDepartments = async (req, res) => {
 
 export const createDepartment = async (req, res) => {
   try {
-    if (!isDbConnected()) return res.status(503).json({ success: false, message: "Database unavailable." });
-    const dept = await Department.create(req.body);
+    if (!ensureDb(res)) return;
+    const dept = await createDepartmentRow(req.body);
     res.status(201).json({ success: true, data: dept });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
@@ -285,8 +266,8 @@ export const createDepartment = async (req, res) => {
 
 export const updateDepartment = async (req, res) => {
   try {
-    if (!isDbConnected()) return res.status(503).json({ success: false, message: "Database unavailable." });
-    const dept = await Department.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!ensureDb(res)) return;
+    const dept = await updateDepartmentRow(req.params.id, req.body);
     if (!dept) return res.status(404).json({ success: false, message: "Department not found." });
     res.json({ success: true, data: dept });
   } catch (err) {
@@ -296,8 +277,8 @@ export const updateDepartment = async (req, res) => {
 
 export const deleteDepartment = async (req, res) => {
   try {
-    if (!isDbConnected()) return res.status(503).json({ success: false, message: "Database unavailable." });
-    await Department.findByIdAndDelete(req.params.id);
+    if (!ensureDb(res)) return;
+    await deleteDepartmentRow(req.params.id);
     res.json({ success: true, message: "Department deleted." });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -309,7 +290,7 @@ export const deleteDepartment = async (req, res) => {
 export const getJobPositions = async (req, res) => {
   try {
     if (isDbConnected()) {
-      const positions = await JobPosition.find().populate("departmentId", "name").sort({ level: 1, title: 1 });
+      const positions = await listJobPositions();
       if (positions.length > 0) return res.json({ success: true, data: positions });
     }
     res.json({ success: true, data: demoJobPositions, source: "demo" });
@@ -320,8 +301,8 @@ export const getJobPositions = async (req, res) => {
 
 export const createJobPosition = async (req, res) => {
   try {
-    if (!isDbConnected()) return res.status(503).json({ success: false, message: "Database unavailable." });
-    const pos = await JobPosition.create(req.body);
+    if (!ensureDb(res)) return;
+    const pos = await createJobPositionRow(req.body);
     res.status(201).json({ success: true, data: pos });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
@@ -330,8 +311,8 @@ export const createJobPosition = async (req, res) => {
 
 export const updateJobPosition = async (req, res) => {
   try {
-    if (!isDbConnected()) return res.status(503).json({ success: false, message: "Database unavailable." });
-    const pos = await JobPosition.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!ensureDb(res)) return;
+    const pos = await updateJobPositionRow(req.params.id, req.body);
     if (!pos) return res.status(404).json({ success: false, message: "Job position not found." });
     res.json({ success: true, data: pos });
   } catch (err) {
@@ -341,8 +322,8 @@ export const updateJobPosition = async (req, res) => {
 
 export const deleteJobPosition = async (req, res) => {
   try {
-    if (!isDbConnected()) return res.status(503).json({ success: false, message: "Database unavailable." });
-    await JobPosition.findByIdAndDelete(req.params.id);
+    if (!ensureDb(res)) return;
+    await deleteJobPositionRow(req.params.id);
     res.json({ success: true, message: "Job position deleted." });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -354,12 +335,7 @@ export const deleteJobPosition = async (req, res) => {
 export const getERPEmployees = async (req, res) => {
   try {
     if (isDbConnected()) {
-      const emps = await ERPEmployee.find()
-        .select("-__v")
-        .populate("departmentId", "name")
-        .populate("jobPositionId", "title level")
-        .populate("managerId", "fullName employeeCode")
-        .sort({ level: 1, fullName: 1 });
+      const emps = await listErpEmployees();
       if (emps.length > 0) return res.json({ success: true, data: emps });
     }
     res.json({ success: true, data: demoEmployees, source: "demo" });
@@ -372,17 +348,19 @@ export const getERPHierarchy = async (req, res) => {
   try {
     if (!ensureDb(res)) return;
 
-    // 1. Try ERPEmployee first (dedicated hierarchy model)
-    const erpEmps = await ERPEmployee.find({ status: "active" })
-      .select("-__v")
-      .sort({ level: 1, fullName: 1 });
+    // 1. Try erp_employees first (dedicated hierarchy table)
+    const erpEmps = await listActiveErpEmployees();
 
     if (erpEmps.length > 0) {
-      const hierarchy = buildHierarchy(erpEmps.map((e) => e.toObject()));
+      const hierarchy = buildHierarchy(erpEmps.map((e) => ({
+        _id: e.id, fullName: e.full_name, email: e.email, employeeCode: e.employee_code,
+        level: e.level, departmentId: e.department_id, jobPositionId: e.job_position_id,
+        managerId: e.manager_id, status: e.status, assignedModules: e.assigned_modules,
+      })));
       return res.json({ success: true, data: hierarchy, source: "erp_employees" });
     }
 
-    // 2. Fall back to the regular Employee model (now Postgres) — normalise to the shape buildHierarchy expects
+    // 2. Fall back to the regular Employee table — normalise to the shape buildHierarchy expects
     const realEmps = await listEmployeesExcludingStatus("inactive");
 
     if (realEmps.length > 0) {
@@ -428,8 +406,8 @@ export const getERPHierarchy = async (req, res) => {
 
 export const createERPEmployee = async (req, res) => {
   try {
-    if (!isDbConnected()) return res.status(503).json({ success: false, message: "Database unavailable." });
-    const emp = await ERPEmployee.create(req.body);
+    if (!ensureDb(res)) return;
+    const emp = await createErpEmployee(req.body);
     res.status(201).json({ success: true, data: emp });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
@@ -438,8 +416,8 @@ export const createERPEmployee = async (req, res) => {
 
 export const updateERPEmployee = async (req, res) => {
   try {
-    if (!isDbConnected()) return res.status(503).json({ success: false, message: "Database unavailable." });
-    const emp = await ERPEmployee.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!ensureDb(res)) return;
+    const emp = await updateErpEmployee(req.params.id, req.body);
     if (!emp) return res.status(404).json({ success: false, message: "Employee not found." });
     res.json({ success: true, data: emp });
   } catch (err) {
@@ -449,8 +427,8 @@ export const updateERPEmployee = async (req, res) => {
 
 export const deleteERPEmployee = async (req, res) => {
   try {
-    if (!isDbConnected()) return res.status(503).json({ success: false, message: "Database unavailable." });
-    await ERPEmployee.findByIdAndDelete(req.params.id);
+    if (!ensureDb(res)) return;
+    await deleteErpEmployee(req.params.id);
     res.json({ success: true, message: "Employee deleted." });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -462,30 +440,8 @@ export const deleteERPEmployee = async (req, res) => {
 export const getApprovalRequests = async (req, res) => {
   try {
     if (isDbConnected()) {
-      const requests = await ApprovalRequest.find()
-        .populate("employeeId", "fname lname email department jobTitle")
-        .populate("currentApproverId", "fname lname email department jobTitle")
-        .sort({ createdAt: -1 });
-      if (requests.length > 0) {
-        // Normalise each record so the frontend always gets resolved name fields
-        const normalised = requests.map((r) => {
-          const obj = r.toObject();
-          // Resolve requester name: populated ref > stored string fields
-          if (obj.employeeId) {
-            obj._resolvedEmployeeName = `${obj.employeeId.fname} ${obj.employeeId.lname}`.trim();
-          } else {
-            obj._resolvedEmployeeName = obj.employeeName || obj.requestedBy || "";
-          }
-          // Resolve approver name
-          if (obj.currentApproverId) {
-            obj._resolvedApproverName = `${obj.currentApproverId.fname} ${obj.currentApproverId.lname}`.trim();
-          } else {
-            obj._resolvedApproverName = obj.currentApproverName || "";
-          }
-          return obj;
-        });
-        return res.json({ success: true, data: normalised });
-      }
+      const requests = await listApprovalRequests();
+      if (requests.length > 0) return res.json({ success: true, data: requests });
     }
     res.json({ success: true, data: demoApprovalRequests, source: "demo" });
   } catch (err) {
@@ -495,8 +451,8 @@ export const getApprovalRequests = async (req, res) => {
 
 export const createApprovalRequest = async (req, res) => {
   try {
-    if (!isDbConnected()) return res.status(503).json({ success: false, message: "Database unavailable." });
-    const request = await ApprovalRequest.create(req.body);
+    if (!ensureDb(res)) return;
+    const request = await createApprovalRequestRow(req.body);
     res.status(201).json({ success: true, data: request });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
@@ -505,22 +461,18 @@ export const createApprovalRequest = async (req, res) => {
 
 export const updateApprovalStatus = async (req, res) => {
   try {
-    if (!isDbConnected()) return res.status(503).json({ success: false, message: "Database unavailable." });
+    if (!ensureDb(res)) return;
     const { status, notes } = req.body;
-    const request = await ApprovalRequest.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { new: true }
-    );
+    const request = await updateApprovalRequestRow(req.params.id, { status });
     if (!request) return res.status(404).json({ success: false, message: "Request not found." });
     if (notes) {
-      await ApprovalStep.create({
-        requestId: request._id,
-        stepOrder: 1,
-        approverId: request.currentApproverId,
+      await createApprovalStep({
+        request_id: request.id,
+        step_order: 1,
+        approver_id: request.current_approver_id,
         status,
         notes,
-        [status === "approved" ? "approvedAt" : "rejectedAt"]: new Date(),
+        [status === "approved" ? "approved_at" : "rejected_at"]: new Date().toISOString(),
       });
     }
     res.json({ success: true, data: request });
@@ -554,7 +506,7 @@ export const getERPSchema = async (req, res) => {
 export const getSchemaRelations = async (req, res) => {
   try {
     if (!ensureDb(res)) return;
-    const relations = await ERPSchemaRelation.find().sort({ appSlug: 1, fromTable: 1 });
+    const relations = await listSchemaRelations();
     res.json({ success: true, data: relations });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -564,7 +516,7 @@ export const getSchemaRelations = async (req, res) => {
 export const createSchemaRelation = async (req, res) => {
   try {
     if (!ensureDb(res)) return;
-    const relation = await ERPSchemaRelation.create(req.body);
+    const relation = await createSchemaRelationRow(req.body);
     res.status(201).json({ success: true, data: relation });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
@@ -577,10 +529,7 @@ export const updateSchemaRelation = async (req, res) => {
     if (!isValidId(req.params.id)) {
       return res.status(400).json({ success: false, message: "Invalid relation id." });
     }
-    const relation = await ERPSchemaRelation.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
+    const relation = await updateSchemaRelationRow(req.params.id, req.body);
     if (!relation) return res.status(404).json({ success: false, message: "Relation not found." });
     return res.json({ success: true, data: relation });
   } catch (err) {
@@ -594,7 +543,7 @@ export const deleteSchemaRelation = async (req, res) => {
     if (!isValidId(req.params.id)) {
       return res.status(400).json({ success: false, message: "Invalid relation id." });
     }
-    const relation = await ERPSchemaRelation.findByIdAndDelete(req.params.id);
+    const relation = await deleteSchemaRelationRow(req.params.id);
     if (!relation) return res.status(404).json({ success: false, message: "Relation not found." });
     return res.json({ success: true, message: "Relation deleted." });
   } catch (err) {
@@ -608,9 +557,7 @@ export const getApprovalRequest = async (req, res) => {
     if (!isValidId(req.params.id)) {
       return res.status(400).json({ success: false, message: "Invalid approval id." });
     }
-    const request = await ApprovalRequest.findById(req.params.id)
-      .populate("employeeId", "fullName employeeCode")
-      .populate("currentApproverId", "fullName");
+    const request = await findApprovalRequestById(req.params.id);
     if (!request) return res.status(404).json({ success: false, message: "Request not found." });
     return res.json({ success: true, data: request });
   } catch (err) {
@@ -624,10 +571,7 @@ export const updateApprovalRequest = async (req, res) => {
     if (!isValidId(req.params.id)) {
       return res.status(400).json({ success: false, message: "Invalid approval id." });
     }
-    const request = await ApprovalRequest.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
+    const request = await updateApprovalRequestRow(req.params.id, req.body);
     if (!request) return res.status(404).json({ success: false, message: "Request not found." });
     return res.json({ success: true, data: request });
   } catch (err) {

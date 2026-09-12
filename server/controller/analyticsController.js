@@ -1,7 +1,5 @@
 import mongoose from "mongoose";
 import User from "../model/usermodel.js";
-import Lead from "../model/Lead.js";
-import Quote from "../model/Quote.js";
 import ApprovalRequest from "../model/ApprovalRequest.js";
 import { isSupabaseConfigured } from "../config/supabase.js";
 import { countActiveProducts, countLowStockActiveProducts, listLowStockActiveProducts } from "../models-pg/products.js";
@@ -15,6 +13,8 @@ import {
   groupCategoryRevenue,
   groupTopProductsByRevenue,
 } from "../models-pg/orders.js";
+import { countLeadsByStatus, countLeadsExcludingStatuses, listRecentLeadsExcludingStatuses } from "../models-pg/leads.js";
+import { countQuotesByStatus, countQuotesByStatuses, countQuotesExcludingStatuses } from "../models-pg/quotes.js";
 
 // ─── Shared helper ────────────────────────────────────────────────────────────
 const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -88,15 +88,11 @@ export const getDashboardSummary = async (req, res) => {
     ] = await Promise.all([
       countOrdersExcludingStatus("cancelled"),
       User.countDocuments({ role: "customer" }),
-      Quote.countDocuments({ status: { $in: ["draft", "pending", "sent"] } }),
+      countQuotesByStatuses(["draft", "pending", "sent"]),
       ApprovalRequest.countDocuments({ status: "pending" }),
       listLowStockActiveProducts(5),
       listRecentOrdersExcludingStatus("cancelled", 5),
-      Lead.find({ status: { $nin: ["won", "lost", "archived"] } })
-        .sort({ createdAt: -1 })
-        .limit(5)
-        .select("name company status priority estimatedValue createdAt")
-        .lean(),
+      listRecentLeadsExcludingStatuses(["won", "lost", "archived"], 5),
       groupMonthlyOrderTotals(sixMonthsAgo),
     ]);
 
@@ -169,14 +165,14 @@ export const getAnalyticsOverview = async (req, res) => {
 
       // Lead conversion (won/total non-archived)
       Promise.all([
-        Lead.countDocuments({ status: "won" }),
-        Lead.countDocuments({ status: { $nin: ["archived"] } }),
+        countLeadsByStatus("won"),
+        countLeadsExcludingStatuses(["archived"]),
       ]),
 
       // Quote conversion (accepted/total non-cancelled-expired)
       Promise.all([
-        Quote.countDocuments({ status: "accepted" }),
-        Quote.countDocuments({ status: { $nin: ["cancelled", "expired"] } }),
+        countQuotesByStatus("accepted"),
+        countQuotesExcludingStatuses(["cancelled", "expired"]),
       ]),
     ]);
 
