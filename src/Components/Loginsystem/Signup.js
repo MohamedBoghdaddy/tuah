@@ -115,7 +115,7 @@ const Signup = () => {
       <section className="auth-visual-panel">
         <img className="auth-visual-image" src={signupVisual} alt="Serene luxury bedroom" />
         <div className="auth-visual-overlay auth-visual-overlay-signup" />
-        <div className="auth-visual-brand-top">Tuah</div>
+        <div className="auth-visual-brand-top">Tuwa</div>
         <div className="auth-visual-copy">
           <h2>Design the life you were meant to live.</h2>
           <p>Join an exclusive community of curators and interior enthusiasts.</p>
@@ -124,7 +124,7 @@ const Signup = () => {
 
       <section className="auth-form-panel" aria-labelledby="signup-title">
         <div className="auth-form-card">
-          <div className="auth-mobile-brand">Tuah</div>
+          <div className="auth-mobile-brand">Tuwa</div>
 
           <header className="auth-header">
             <h1 id="signup-title">Create Account</h1>
@@ -208,7 +208,7 @@ const Signup = () => {
         </div>
 
         <div className="auth-legal">
-          <p>(c) 2024 Tuah Commerce OS. Privacy Policy &amp; Terms of Service.</p>
+          <p>(c) 2024 Tuwa Commerce OS. Privacy Policy &amp; Terms of Service.</p>
         </div>
       </section>
     </main>

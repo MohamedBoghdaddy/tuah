@@ -38,14 +38,14 @@ const Login = () => {
         <img className="auth-visual-image" src={loginVisual} alt="Minimalist luxury living room" />
         <div className="auth-visual-overlay auth-visual-overlay-login" />
         <div className="auth-visual-copy">
-          <p className="auth-visual-brand">Tuah</p>
+          <p className="auth-visual-brand">Tuwa</p>
           <p className="auth-visual-line">Access your quiet showroom and curated interiors.</p>
         </div>
       </section>
 
       <section className="auth-form-panel" aria-labelledby="login-title">
         <div className="auth-form-card">
-          <div className="auth-mobile-brand">Tuah</div>
+          <div className="auth-mobile-brand">Tuwa</div>
 
           <header className="auth-header">
             <p className="auth-kicker">Welcome Back</p>
@@ -117,7 +117,7 @@ const Login = () => {
           <Link to="/privacy">Privacy Policy</Link>
           <Link to="/terms">Terms of Service</Link>
           <Link to="/contact">Contact Support</Link>
-          <p>(c) 2024 Tuah Commerce OS.</p>
+          <p>(c) 2024 Tuwa Commerce OS.</p>
         </div>
       </section>
     </main>

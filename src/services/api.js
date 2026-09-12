@@ -7,7 +7,7 @@ const API_URL =
     ? "http://localhost:4000"
     : "https://tuah.onrender.com");
 
-const STORE_KEY = "tuahDemoStore";
+const STORE_KEY = "tuwaDemoStore";
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 
@@ -110,7 +110,7 @@ const orderDisplay = (order) => ({
   itemsSummary:
     order.itemsSummary ||
     (order.items || []).map((item) => item.name).join(", ") ||
-    "Custom Tuah order",
+    "Custom Tuwa order",
 });
 
 const buildDashboard = (store) => {

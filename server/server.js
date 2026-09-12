@@ -40,7 +40,7 @@ const __dirname = path.dirname(__filename);
 
 const {
   PORT = 4000,
-  SESSION_SECRET = "tuah-demo-session-secret",
+  SESSION_SECRET = "tuwa-demo-session-secret",
   FRONTEND_URL,
   CORS_ORIGIN = "http://localhost:3000",
   NODE_ENV = "development",
@@ -59,7 +59,7 @@ const allowedOrigins = [
   ...splitOrigins(FRONTEND_URL),
   "http://localhost:3000",
   "http://localhost:3001",
-  "https://tuah-cool.vercel.app",
+  "https://tuwa-cool.vercel.app",
 ].filter(Boolean);
 
 const databaseUnavailablePayload = () => ({
@@ -155,7 +155,7 @@ const configureApp = () => {
 
   app.get("/", (req, res) => {
     res.json({
-      message: `Tuah API is running in ${app.locals.dbMode} mode`,
+      message: `Tuwa API is running in ${app.locals.dbMode} mode`,
       database: {
         available: app.locals.dbAvailable,
         provider: "supabase",
@@ -189,7 +189,7 @@ const bootstrap = () => {
     console.log("Connected to Supabase Postgres.");
   } else {
     console.warn(
-      "SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set. Running Tuah API with in-memory demo data. Database-backed routes will return HTTP 503.",
+      "SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set. Running Tuwa API with in-memory demo data. Database-backed routes will return HTTP 503.",
     );
   }
 

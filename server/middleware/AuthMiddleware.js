@@ -7,7 +7,7 @@ import { isSupabaseConfigured } from "../config/supabase.js";
 
 dotenv.config();
 
-const JWT_SECRET = process.env.JWT_SECRET || "tuah-demo-jwt-secret";
+const JWT_SECRET = process.env.JWT_SECRET || "tuwa-demo-jwt-secret";
 
 const ADMIN_ROLES = ["admin", "super_admin"];
 const STAFF_ROLES = ["admin", "super_admin", "manager", "HR", "accountant", "operations", "designer", "employee"];

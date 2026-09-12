@@ -1,9 +1,9 @@
-# Tuah 🛋️
+# Tuwa 🛋️
 
-![Build Status](https://img.shields.io/github/actions/workflow/status/MohamedBoghdaddy/Tuah/ci.yml?branch=main)
-![License](https://img.shields.io/github/license/MohamedBoghdaddy/Tuah)
+![Build Status](https://img.shields.io/github/actions/workflow/status/MohamedBoghdaddy/Tuwa/ci.yml?branch=main)
+![License](https://img.shields.io/github/license/MohamedBoghdaddy/Tuwa)
 
-**Tuah** is a furniture and product design company dedicated to creating innovative, sustainable, and aesthetically pleasing designs. Our mission is to enhance everyday living spaces with furniture that combines form, function, and sustainability. 🌱🛠️
+**Tuwa** is a furniture and product design company dedicated to creating innovative, sustainable, and aesthetically pleasing designs. Our mission is to enhance everyday living spaces with furniture that combines form, function, and sustainability. 🌱🛠️
 
 ## ⚙️ Tech Stack
 - **Stack**: MERN
@@ -35,13 +35,13 @@ Here are some of our featured designs:
 
 ## 🛠️ Installation
 
-This repository contains the source code for Tuah's website. To run it locally, follow these steps:
+This repository contains the source code for Tuwa's website. To run it locally, follow these steps:
 
 1. **Clone the Repository**:
 
    ```bash
-   git clone https://github.com/MohamedBoghdaddy/Tuah.git
-   cd Tuah
+   git clone https://github.com/MohamedBoghdaddy/Tuwa.git
+   cd Tuwa
    ```
 
 2. **Install Dependencies**:
@@ -79,4 +79,4 @@ This project is licensed under the MIT License. See the [`LICENSE`](LICENSE) fil
 
 ---
 
-**Tuah** is redefining furniture design with a focus on sustainability, quality, and innovation. Explore our catalog and transform your living space with pieces that embody style and functionality.
+**Tuwa** is redefining furniture design with a focus on sustainability, quality, and innovation. Explore our catalog and transform your living space with pieces that embody style and functionality.

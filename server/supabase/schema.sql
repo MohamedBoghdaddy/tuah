@@ -1,5 +1,5 @@
 -- ============================================================
--- Tuah Commerce – Supabase Postgres Schema
+-- Tuwa Commerce – Supabase Postgres Schema
 -- ⚠️  REQUIRED for production — run ONCE in: Supabase Dashboard → SQL Editor
 -- MongoDB remains the source of truth for all business data.
 -- These tables store email outbox / logs and image-asset metadata.
@@ -122,14 +122,14 @@ insert into email_templates (key, subject, body_html, body_text, variables)
 values
   (
     'employee_invite',
-    'You have been invited to join Tuah Commerce',
-    '<h2>Welcome to Tuah Commerce</h2><p>Hi {{name}},</p><p>You have been invited as a <strong>{{role}}</strong> in the <strong>{{department}}</strong> department.</p><p><a href="{{inviteUrl}}">Accept Invitation</a></p>',
-    'Hi {{name}}, you have been invited to join Tuah Commerce as {{role}} in {{department}}. Accept at: {{inviteUrl}}',
+    'You have been invited to join Tuwa Commerce',
+    '<h2>Welcome to Tuwa Commerce</h2><p>Hi {{name}},</p><p>You have been invited as a <strong>{{role}}</strong> in the <strong>{{department}}</strong> department.</p><p><a href="{{inviteUrl}}">Accept Invitation</a></p>',
+    'Hi {{name}}, you have been invited to join Tuwa Commerce as {{role}} in {{department}}. Accept at: {{inviteUrl}}',
     '{"name":"string","role":"string","department":"string","inviteUrl":"string"}'::jsonb
   ),
   (
     'order_confirmation',
-    'Your Tuah Commerce order #{{orderId}} is confirmed',
+    'Your Tuwa Commerce order #{{orderId}} is confirmed',
     '<h2>Order Confirmed</h2><p>Hi {{name}},</p><p>Your order <strong>#{{orderId}}</strong> has been confirmed. Total: <strong>{{total}}</strong>.</p>',
     'Hi {{name}}, your order #{{orderId}} is confirmed. Total: {{total}}.',
     '{"name":"string","orderId":"string","total":"string"}'::jsonb

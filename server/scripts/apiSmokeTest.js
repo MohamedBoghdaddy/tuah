@@ -1,5 +1,5 @@
 /**
- * Tuah Commerce — API Smoke Test
+ * Tuwa Commerce — API Smoke Test
  * Usage: node server/scripts/apiSmokeTest.js [base_url]
  *
  * Tests all key endpoints and prints a pass/fail table.
@@ -44,7 +44,7 @@ function test(label, { status, data, isJson, error }, expectStatus, expectJson =
 }
 
 async function run() {
-  console.log(`\n🧪  Tuah API Smoke Test — ${BASE}\n${"─".repeat(60)}`);
+  console.log(`\n🧪  Tuwa API Smoke Test — ${BASE}\n${"─".repeat(60)}`);
 
   // ── Health ──────────────────────────────────────────────────
   console.log("\n📌  HEALTH");
@@ -96,7 +96,7 @@ async function run() {
   console.log("\n📌  CHECKOUT (demo)");
   const checkout = await req("POST", "/api/checkout", {
     body: {
-      customer: { firstName: "Customer", lastName: "Tester", email: "customer.tester+tuah@example.com", phone: "+201000000000" },
+      customer: { firstName: "Customer", lastName: "Tester", email: "customer.tester+tuwa@example.com", phone: "+201000000000" },
       items: [{ id: "obsidian-kitchen-island", name: "The Obsidian Kitchen Island", price: 12450, quantity: 1 }],
       totals: { subtotal: 12450, install: 450, tax: 1021, total: 13921 },
     },

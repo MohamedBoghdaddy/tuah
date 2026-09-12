@@ -1,5 +1,5 @@
 /* ============================================
-   TUAH COMMERCE OS — DESIGN SYSTEM
+   TUWA COMMERCE OS — DESIGN SYSTEM
    CSS Custom Properties & Typography Classes
    ============================================ */
 
@@ -157,7 +157,7 @@
 .text-white         { color: #FFFFFF; }
 
 /* ---- Layout ---- */
-.tuah-container {
+.tuwa-container {
   max-width: 1440px;
   margin: 0 auto;
   padding: 0 var(--space-md);
@@ -207,7 +207,7 @@
 .badge-neutral { background:var(--color-surface-highest); color:var(--color-on-surface-variant); }
 
 /* ---- Button System ---- */
-.btn-tuah-primary {
+.btn-tuwa-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -226,9 +226,9 @@
   text-decoration: none;
   border-radius: var(--radius-sm);
 }
-.btn-tuah-primary:hover  { opacity: 0.88; color: var(--color-on-primary); }
+.btn-tuwa-primary:hover  { opacity: 0.88; color: var(--color-on-primary); }
 
-.btn-tuah-outline {
+.btn-tuwa-outline {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -247,9 +247,9 @@
   text-decoration: none;
   border-radius: var(--radius-sm);
 }
-.btn-tuah-outline:hover { background: var(--color-secondary-container); color: var(--color-on-tertiary-container); }
+.btn-tuwa-outline:hover { background: var(--color-secondary-container); color: var(--color-on-tertiary-container); }
 
-.btn-tuah-ghost {
+.btn-tuwa-ghost {
   background: transparent;
   border: none;
   cursor: pointer;
@@ -267,7 +267,7 @@
   transition: color var(--transition-fast), border-color var(--transition-fast);
   text-decoration: none;
 }
-.btn-tuah-ghost:hover { color: var(--color-on-tertiary-container); border-color: var(--color-on-tertiary-container); }
+.btn-tuwa-ghost:hover { color: var(--color-on-tertiary-container); border-color: var(--color-on-tertiary-container); }
 
 /* ---- Image hover scale ---- */
 .img-hover-scale { overflow: hidden; }
@@ -278,7 +278,7 @@
 .img-hover-scale:hover img { transform: scale(1.05); }
 
 /* ---- Divider ---- */
-.tuah-divider {
+.tuwa-divider {
   width: 64px; height: 2px;
   background: var(--color-on-tertiary-container);
   margin: 12px 0 0;

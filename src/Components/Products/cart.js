@@ -47,7 +47,7 @@ const Cart = () => {
             <span className="material-symbols-outlined">shopping_bag</span>
             <h3>Your cart is empty</h3>
             <p>Add some beautiful pieces to get started.</p>
-            <Link to="/collections" className="btn-tuah-primary">Shop Collections</Link>
+            <Link to="/collections" className="btn-tuwa-primary">Shop Collections</Link>
           </div>
         ) : (
           <div className="cart-layout">
@@ -134,7 +134,7 @@ const Cart = () => {
                 </div>
 
                 <div className="order-summary-actions">
-                  <button className="btn-tuah-primary checkout-cta" type="button" onClick={() => navigate("/checkout")}>
+                  <button className="btn-tuwa-primary checkout-cta" type="button" onClick={() => navigate("/checkout")}>
                     Secure Checkout
                   </button>
                   <button className="quote-cta" type="button" onClick={() => navigate("/contact?reason=quote")}>

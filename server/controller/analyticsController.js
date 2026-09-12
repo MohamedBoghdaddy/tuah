@@ -248,7 +248,7 @@ export const exportAnalyticsCSV = async (req, res) => {
       .join("\n");
 
     res.setHeader("Content-Type", "text/csv");
-    res.setHeader("Content-Disposition", `attachment; filename="tuah-analytics-${Date.now()}.csv"`);
+    res.setHeader("Content-Disposition", `attachment; filename="tuwa-analytics-${Date.now()}.csv"`);
     return res.send(csv);
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });

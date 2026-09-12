@@ -115,8 +115,8 @@
 .co-modal h2 { font-family: var(--font-serif); font-size: 28px; font-weight: 400; margin-bottom: 16px; }
 .co-modal p { font-size: 16px; color: var(--color-on-surface-variant); line-height: 1.7; margin-bottom: 36px; }
 .co-modal-actions { display: flex; flex-direction: column; gap: 12px; align-items: center; }
-.co-modal-actions .btn-tuah-primary,
-.co-modal-actions .btn-tuah-outline { width: 100%; max-width: 320px; justify-content: center; }
+.co-modal-actions .btn-tuwa-primary,
+.co-modal-actions .btn-tuwa-outline { width: 100%; max-width: 320px; justify-content: center; }
 
 @media (max-width: 1024px) {
   .checkout-layout { grid-template-columns: 1fr; }

@@ -100,7 +100,7 @@ export const EmployeeSidebar = ({ active = "Overview" }) => {
       {/* ── Desktop sidebar ─────────────────────────────────────────────────── */}
       <aside className="admin-premium-sidebar">
         <div className="admin-premium-brand">
-          <h1>Tuah OS</h1>
+          <h1>Tuwa OS</h1>
           <p>Employee Console</p>
         </div>
         <EmployeeNav active={active} />
@@ -118,7 +118,7 @@ export const EmployeeSidebar = ({ active = "Overview" }) => {
         >
           <span className="material-symbols-outlined">menu</span>
         </button>
-        <span className="admin-mobile-brand">Tuah OS</span>
+        <span className="admin-mobile-brand">Tuwa OS</span>
         <button
           type="button"
           className="admin-mobile-logout-btn"
@@ -149,7 +149,7 @@ export const EmployeeSidebar = ({ active = "Overview" }) => {
       >
         <div className="admin-drawer-header">
           <div className="admin-premium-brand" style={{ padding: "0 0 12px" }}>
-            <h1>Tuah OS</h1>
+            <h1>Tuwa OS</h1>
             <p>Employee Console</p>
           </div>
           <button
@@ -171,7 +171,7 @@ export const EmployeeSidebar = ({ active = "Overview" }) => {
 export const EmployeeFooter = () => (
   <footer className="admin-premium-footer">
     <div>
-      <p>&copy; 2025 Tuah Commerce OS. All rights reserved.</p>
+      <p>&copy; 2025 Tuwa Commerce OS. All rights reserved.</p>
       <nav aria-label="Footer links">
         <Link to="/privacy">Privacy Policy</Link>
         <Link to="/terms">Terms of Service</Link>

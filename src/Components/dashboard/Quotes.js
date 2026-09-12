@@ -74,7 +74,7 @@ const Quotes = () => {
           <p className="admin-page-eyebrow">Quotes</p>
           <h2>Quote Pipeline</h2>
         </div>
-        <button className="btn-tuah-primary" type="button" onClick={() => window.location.assign("/admin/leads")}>
+        <button className="btn-tuwa-primary" type="button" onClick={() => window.location.assign("/admin/leads")}>
           <span className="material-symbols-outlined" style={{ fontSize: 16 }}>add</span>
           New Quote
         </button>

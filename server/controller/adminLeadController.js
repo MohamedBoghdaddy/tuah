@@ -82,7 +82,7 @@ const validateLead = (payload, { partial = false } = {}) => {
 const normalizeItems = (items, fallbackAmount = 0) => {
   if (!Array.isArray(items) || items.length === 0) {
     const amount = Math.max(0, parseAmount(fallbackAmount, 0));
-    return [{ name: "Custom Tuah scope", description: "", quantity: 1, unitPrice: amount, total: amount }];
+    return [{ name: "Custom Tuwa scope", description: "", quantity: 1, unitPrice: amount, total: amount }];
   }
 
   return items
@@ -269,7 +269,7 @@ export const sendQuote = async (req, res) => {
   }
 
   const validUntilText = quote.valid_until ? new Date(quote.valid_until).toDateString() : "";
-  const subject = `Tuah Commerce Quote ${quote.quote_number}`;
+  const subject = `Tuwa Commerce Quote ${quote.quote_number}`;
   const bodyText = [
     `Hello ${recipient.name || "there"},`,
     `Your quote ${quote.quote_number} is ready.`,
@@ -280,7 +280,7 @@ export const sendQuote = async (req, res) => {
   const bodyHtml = `
     <h2>Quote ${quote.quote_number}</h2>
     <p>Hello ${recipient.name || "there"},</p>
-    <p>Your Tuah Commerce quote is ready.</p>
+    <p>Your Tuwa Commerce quote is ready.</p>
     <p><strong>Total:</strong> ${money(quote.total)}</p>
     ${validUntilText ? `<p><strong>Valid until:</strong> ${validUntilText}</p>` : ""}
     ${quote.notes ? `<p>${quote.notes}</p>` : ""}
@@ -328,13 +328,13 @@ export const downloadQuotePdf = async (req, res) => {
   res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
   doc.pipe(res);
 
-  doc.fontSize(22).text("Tuah Commerce", { align: "left" });
+  doc.fontSize(22).text("Tuwa Commerce", { align: "left" });
   doc.moveDown(0.4);
   doc.fontSize(16).text(`Quote ${quote.quote_number}`);
   doc.moveDown();
   doc.fontSize(10).text(`Customer: ${quote.customer_name || quote.lead?.name || "Not provided"}`);
   doc.text(`Email: ${quote.customer_email || quote.lead?.email || "Not provided"}`);
-  doc.text(`Project: ${quote.project || quote.lead?.project_type || "Custom Tuah project"}`);
+  doc.text(`Project: ${quote.project || quote.lead?.project_type || "Custom Tuwa project"}`);
   if (quote.valid_until) doc.text(`Valid until: ${new Date(quote.valid_until).toDateString()}`);
   doc.moveDown();
 

@@ -39,7 +39,7 @@ const featuredCollections = [
     title: "Kitchens",
     subtitle: "Culinary sanctuaries designed for craft.",
     path: "/collections/kitchens",
-    className: "tuah-featured-large",
+    className: "tuwa-featured-large",
     image:
       "https://lh3.googleusercontent.com/aida-public/AB6AXuCEAhjFPUItLxxOaR7BMld1mCJr3kY_jYeMzAXgnxovBlFWjCXQ9JAiBSmQRTwYsm2MaN-OBzz7C5KAsCEo7ZOwq4KLzAZwQk5VbLA9GsYw8oad7poGqmpTgcLBfI0z3Mx_odse-0ZPQ--uJtKsoxHznTJpUOpVauDSDlhuFpfxhq7TIpvf_z4gsjjW672p4P5dqUvxsuekYaiQlUndjToy1e25ppoYuODEJfmKcvin2RkA0xSY8UCj7xo5ML4HcsYSZKHO7KSBqk3w",
   },
@@ -47,7 +47,7 @@ const featuredCollections = [
     title: "Bedrooms",
     subtitle: "Restful spaces of quiet luxury.",
     path: "/collections/bedrooms",
-    className: "tuah-featured-wide",
+    className: "tuwa-featured-wide",
     image:
       "https://lh3.googleusercontent.com/aida-public/AB6AXuDXdzQ9Zlizx8AhwVye2n6B9uYmBIOgm8H9VwGdkUrsmt7FeRvjHnUNKSfQCPAsFVVEjG_yYL1qIvXZOVVDdznc5voK-JnMSrsAmk2GUYid_G81Uy9-V_SI4YX2i2eJfx-dIYGL3Jb2lemFZ7DzBCYGGFeG-GcOgoA2dWQDHwl3AiHRhqlpIjhiXDXSGea0aRTLixZB47PXPTs1ap_4oU4E0BTrJokem9IE7d_kG6hqK2Q24Y0IcWfU92F7QItPDMD2h9qiGK7Dnzc4",
   },
@@ -68,10 +68,10 @@ const featuredCollections = [
 ];
 
 const StatsRow = () => (
-  <section className="tuah-home-stats" aria-label="Tuah statistics">
-    <div className="tuah-home-container tuah-home-stats-grid">
+  <section className="tuwa-home-stats" aria-label="Tuwa statistics">
+    <div className="tuwa-home-container tuwa-home-stats-grid">
       {stats.map((stat) => (
-        <div className="tuah-home-stat" key={stat.label}>
+        <div className="tuwa-home-stat" key={stat.label}>
           <strong>{stat.value}</strong>
           <span>{stat.label}</span>
         </div>
@@ -81,23 +81,23 @@ const StatsRow = () => (
 );
 
 const CuratedCollections = () => (
-  <section className="tuah-home-section tuah-featured" aria-labelledby="collections-heading">
-    <div className="tuah-home-container">
-      <div className="tuah-home-section-heading">
+  <section className="tuwa-home-section tuwa-featured" aria-labelledby="collections-heading">
+    <div className="tuwa-home-container">
+      <div className="tuwa-home-section-heading">
         <h2 id="collections-heading">Curated Collections</h2>
         <span aria-hidden="true" />
       </div>
 
-      <div className="tuah-featured-grid">
+      <div className="tuwa-featured-grid">
         {featuredCollections.map((collection) => (
           <Link
-            className={`tuah-featured-card ${collection.className || ""}`}
+            className={`tuwa-featured-card ${collection.className || ""}`}
             to={collection.path}
             key={collection.title}
           >
             <img src={collection.image} alt={`${collection.title} collection`} />
-            <span className="tuah-featured-shade" aria-hidden="true" />
-            <span className="tuah-featured-copy">
+            <span className="tuwa-featured-shade" aria-hidden="true" />
+            <span className="tuwa-featured-copy">
               <strong>{collection.title}</strong>
               <small>{collection.subtitle}</small>
             </span>
@@ -109,13 +109,13 @@ const CuratedCollections = () => (
 );
 
 const Testimonials = () => (
-  <section className="tuah-home-section tuah-testimonials" aria-labelledby="testimonials-heading">
-    <div className="tuah-home-container">
-      <h2 id="testimonials-heading">Voices of Tuah</h2>
-      <div className="tuah-testimonial-grid">
+  <section className="tuwa-home-section tuwa-testimonials" aria-labelledby="testimonials-heading">
+    <div className="tuwa-home-container">
+      <h2 id="testimonials-heading">Voices of Tuwa</h2>
+      <div className="tuwa-testimonial-grid">
         {testimonials.map((testimonial) => (
-          <article className="tuah-testimonial-card" key={testimonial.name}>
-            <div className="tuah-testimonial-stars" aria-label="5 out of 5 stars">
+          <article className="tuwa-testimonial-card" key={testimonial.name}>
+            <div className="tuwa-testimonial-stars" aria-label="5 out of 5 stars">
               {Array.from({ length: 5 }).map((_, index) => (
                 <span className="material-symbols-outlined" key={index}>
                   star
@@ -123,7 +123,7 @@ const Testimonials = () => (
               ))}
             </div>
             <p>"{testimonial.quote}"</p>
-            <div className="tuah-testimonial-person">
+            <div className="tuwa-testimonial-person">
               <span aria-hidden="true" />
               <div>
                 <strong>{testimonial.name}</strong>
@@ -139,7 +139,7 @@ const Testimonials = () => (
 
 const Home = () => (
   <PublicCommerceShell>
-    <main className="tuah-home-page">
+    <main className="tuwa-home-page">
       <HeroSection />
       <StatsRow />
       <CuratedCollections />

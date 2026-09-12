@@ -63,7 +63,7 @@ export const AuthProvider = ({ children }) => {
     if (state.isAuthenticated || !state.loading) return;
 
     const startedAt = performance.now();
-    if (DEBUG_AUTH_TIMING) console.time("tuah-auth-check");
+    if (DEBUG_AUTH_TIMING) console.time("tuwa-auth-check");
 
     try {
       const token = localStorage.getItem("token");
@@ -94,8 +94,8 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: "AUTH_ERROR" });
     } finally {
       if (DEBUG_AUTH_TIMING) {
-        console.info(`tuah-auth-check-ms=${Math.round(performance.now() - startedAt)}`);
-        console.timeEnd("tuah-auth-check");
+        console.info(`tuwa-auth-check-ms=${Math.round(performance.now() - startedAt)}`);
+        console.timeEnd("tuwa-auth-check");
       }
     }
   }, [state.isAuthenticated, state.loading]);

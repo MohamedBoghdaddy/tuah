@@ -411,7 +411,7 @@ const InviteModal = ({ onClose, onSent, showToast }) => {
         <div className="invite-modal-header">
           <div>
             <h2>Invite New Employee</h2>
-            <p>Grant access to the Tuah Commerce management suite.</p>
+            <p>Grant access to the Tuwa Commerce management suite.</p>
           </div>
           <button className="admin-premium-button" type="button" onClick={onClose}>
             <span className="material-symbols-outlined">close</span>
@@ -426,11 +426,11 @@ const InviteModal = ({ onClose, onSent, showToast }) => {
             </div>
             <div className="admin-field">
               <label htmlFor="invite-lname">Last Name</label>
-              <input id="invite-lname" name="lname" value={fields.lname} onChange={handleChange} placeholder="e.g. Tuah" required />
+              <input id="invite-lname" name="lname" value={fields.lname} onChange={handleChange} placeholder="e.g. Tuwa" required />
             </div>
             <div className="admin-field" style={{ gridColumn: "1 / -1" }}>
               <label htmlFor="invite-email">Work Email</label>
-              <input id="invite-email" name="email" type="email" value={fields.email} onChange={handleChange} placeholder="julian@tuah.com" required />
+              <input id="invite-email" name="email" type="email" value={fields.email} onChange={handleChange} placeholder="julian@tuwa.com" required />
             </div>
           </div>
 

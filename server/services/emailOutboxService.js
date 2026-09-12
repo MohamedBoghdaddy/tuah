@@ -49,8 +49,8 @@ export const queueEmail = async ({
   requireSupabase();
 
   const fromEmail =
-    process.env.EMAIL_FROM_ADDRESS || "noreply@tuahcommerce.com";
-  const fromName = process.env.EMAIL_FROM_NAME || "Tuah Commerce";
+    process.env.EMAIL_FROM_ADDRESS || "noreply@tuwacommerce.com";
+  const fromName = process.env.EMAIL_FROM_NAME || "Tuwa Commerce";
   const displayFrom = fromName ? `${fromName} <${fromEmail}>` : fromEmail;
 
   const { data, error } = await supabaseAdmin

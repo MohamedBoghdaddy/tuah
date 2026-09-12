@@ -25,7 +25,7 @@ const ComingSoonPage = () => {
       title={itemLabel || moduleLabel}
       subtitle={groupLabel ? `${groupLabel} · roadmap` : "Roadmap"}
       breadcrumbs={[
-        { label: "Tuah OS", href: "/admin/dashboard" },
+        { label: "Tuwa OS", href: "/admin/dashboard" },
         ...(groupLabel ? [{ label: groupLabel }] : []),
         { label: itemLabel || moduleLabel },
       ]}
@@ -34,7 +34,7 @@ const ComingSoonPage = () => {
         <span className="material-symbols-outlined">construction</span>
         <h2>{itemLabel || moduleLabel} is coming next</h2>
         <p>
-          This part of the Tuah ERP taxonomy is on the build roadmap but doesn't have a
+          This part of the Tuwa ERP taxonomy is on the build roadmap but doesn't have a
           working backend yet. It isn't hidden — you can see where it sits in the
           navigation — but there's no data to show here honestly, so nothing is faked.
         </p>

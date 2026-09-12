@@ -2,13 +2,13 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "tuah-frontend",
+      "name": "tuwa-frontend",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["start"],
       "port": 3000
     },
     {
-      "name": "tuah-backend",
+      "name": "tuwa-backend",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "server", "run", "dev"],
       "port": 4000

@@ -87,7 +87,7 @@ export const PublicNavbar = ({ active = "" }) => {
       <header className="commerce-navbar">
         <div className="commerce-navbar-inner">
           <Link className="commerce-logo" to="/">
-            Tuah Commerce
+            Tuwa Commerce
           </Link>
 
           {/* Desktop nav — hidden below 768px via CSS */}
@@ -241,7 +241,7 @@ export const PublicFooter = () => (
     <div className="commerce-footer-grid">
       <div className="commerce-footer-brand-col">
         <Link to="/" className="commerce-footer-logo">
-          Tuah Commerce
+          Tuwa Commerce
         </Link>
         <p>Purveyors of fine craftsmanship and considered living.</p>
       </div>
@@ -279,7 +279,7 @@ export const PublicFooter = () => (
     </div>
 
     <div className="commerce-footer-bottom">
-      <p>&copy; 2024 Tuah Commerce. All rights reserved.</p>
+      <p>&copy; 2024 Tuwa Commerce. All rights reserved.</p>
     </div>
   </footer>
 );

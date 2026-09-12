@@ -56,7 +56,7 @@ const features = [
   {
     icon: "videocam",
     title: "Live Guided Tours",
-    body: "Book a session with a Tuah specialist for a synchronized virtual walkthrough and expert styling advice.",
+    body: "Book a session with a Tuwa specialist for a synchronized virtual walkthrough and expert styling advice.",
   },
 ];
 
@@ -108,7 +108,7 @@ export default function VirtualShowroom() {
               <span>The Future of Curation</span>
               <h1>Step into the Extraordinary.</h1>
               <p>
-                Experience Tuah collections in meticulously curated
+                Experience Tuwa collections in meticulously curated
                 architectural environments from the comfort of your home.
                 Explore every texture, angle, and detail in immersive 3D.
               </p>
@@ -141,7 +141,7 @@ export default function VirtualShowroom() {
                 <p>
                   Select a space to begin your virtual journey. Each room is a
                   masterclass in architectural harmony, featuring limited
-                  edition Tuah pieces.
+                  edition Tuwa pieces.
                 </p>
               </div>
 

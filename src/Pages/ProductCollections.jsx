@@ -18,13 +18,13 @@ const categoryMeta = {
     label: "Products",
     heading: "The Collections",
     description:
-      "Discover a living catalogue of Tuah furniture, materials, and architectural pieces drawn from the current product database.",
+      "Discover a living catalogue of Tuwa furniture, materials, and architectural pieces drawn from the current product database.",
   },
   collections: {
     label: "Collections",
     heading: "Curated Collections",
     description:
-      "Explore Tuah pieces by room and ritual, from architectural kitchens to softer finishing objects.",
+      "Explore Tuwa pieces by room and ritual, from architectural kitchens to softer finishing objects.",
   },
   kitchens: {
     label: "Kitchens",

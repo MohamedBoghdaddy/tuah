@@ -1,4 +1,4 @@
-# Tuah Commerce — Full Role UI Test Matrix
+# Tuwa Commerce — Full Role UI Test Matrix
 
 **Date:** 2026-05-20  
 **QA Password for all test accounts:** `12345678`
@@ -147,14 +147,14 @@
 
 | Role | Email | Password |
 |------|-------|----------|
-| super_admin | qa.superadmin@tuah.test | 12345678 |
-| admin | qa.admin@tuah.test | 12345678 |
-| manager | qa.manager@tuah.test | 12345678 |
-| HR | qa.hr@tuah.test | 12345678 |
-| accountant | qa.accountant@tuah.test | 12345678 |
-| operations | qa.operations@tuah.test | 12345678 |
-| designer | qa.designer@tuah.test | 12345678 |
-| employee | qa.employee@tuah.test | 12345678 |
-| customer | qa.customer@tuah.test | 12345678 |
+| super_admin | qa.superadmin@tuwa.test | 12345678 |
+| admin | qa.admin@tuwa.test | 12345678 |
+| manager | qa.manager@tuwa.test | 12345678 |
+| HR | qa.hr@tuwa.test | 12345678 |
+| accountant | qa.accountant@tuwa.test | 12345678 |
+| operations | qa.operations@tuwa.test | 12345678 |
+| designer | qa.designer@tuwa.test | 12345678 |
+| employee | qa.employee@tuwa.test | 12345678 |
+| customer | qa.customer@tuwa.test | 12345678 |
 
 Seed with: `node server/scripts/seedAllRoles.js`

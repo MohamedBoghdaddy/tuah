@@ -5,7 +5,7 @@ import maram4 from "../../Assets/Images/89.jpg";
 import maram5 from "../../Assets/Images/90.jpg";
 
 import "../../Styles/Home.css";
-import pdf from "../../Assets/collection/TUAH-Company Profile-2024 Q01.pdf";
+import pdf from "../../Assets/collection/TUWA-Company Profile-2024 Q01.pdf";
 import Card from "react-bootstrap/Card";
 import Slider from "react-slick";
 
@@ -22,7 +22,7 @@ const CallToActionSection = () => {
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.setAttribute("download", "TUAH-Company Profile-2024 Q01.pdf");
+        link.setAttribute("download", "TUWA-Company Profile-2024 Q01.pdf");
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);

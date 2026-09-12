@@ -56,7 +56,7 @@ const AdminProducts = () => {
           <p className="admin-page-eyebrow">Products / Inventory</p>
           <h2>Product Stock Control</h2>
         </div>
-        <button className="btn-tuah-primary" type="button" onClick={loadInventory} disabled={loading}>
+        <button className="btn-tuwa-primary" type="button" onClick={loadInventory} disabled={loading}>
           <span className="material-symbols-outlined" style={{ fontSize: 16 }}>refresh</span>
           Refresh
         </button>

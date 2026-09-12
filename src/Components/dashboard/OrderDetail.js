@@ -90,7 +90,7 @@ const OrderDetail = () => {
               <div className="admin-detail-row"><span>Created</span><strong>{new Date(order.createdAt || Date.now()).toLocaleDateString()}</strong></div>
             </div>
             <button
-              className="btn-tuah-primary"
+              className="btn-tuwa-primary"
               type="button"
               style={{ marginTop: 20 }}
               onClick={moveStatus}

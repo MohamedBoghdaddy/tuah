@@ -86,7 +86,7 @@ const ProductDetail = () => {
           id: data._id || data.id,
           slug: data.slug || slug,
           price: Number(data.price || 0),
-          material: data.material || data.category || "Tuah finish",
+          material: data.material || data.category || "Tuwa finish",
           img: images[0] || DEFAULT_PRODUCT.img,
         };
         setProduct(normalized);
@@ -289,7 +289,7 @@ const ProductDetail = () => {
               <p>
                 Each Obsidian Island is uniquely carved from a single slab of premium black
                 marble, selected for its distinct character and veining. Master artisans
-                hand-finish each surface to achieve Tuah's matte-satin signature.
+                hand-finish each surface to achieve Tuwa's matte-satin signature.
               </p>
             </div>
 

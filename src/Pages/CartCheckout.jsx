@@ -130,7 +130,7 @@ const CartCheckout = () => {
                               <p className="commerce-cart-item-meta">
                                 {[item.material, item.finish].filter(Boolean).join(" / ") ||
                                   item.meta ||
-                                  "Tuah selected configuration"}
+                                  "Tuwa selected configuration"}
                               </p>
                             </div>
                             <p className="commerce-cart-item-price">{money(item.price)}</p>
@@ -238,7 +238,7 @@ const CartCheckout = () => {
                       <label htmlFor="install-white-glove">
                         <strong>White-Glove Delivery</strong>
                         <p>
-                          Full assembly, room placement, and packaging removal by Tuah
+                          Full assembly, room placement, and packaging removal by Tuwa
                           artisans.
                         </p>
                       </label>
@@ -343,7 +343,7 @@ const CartCheckout = () => {
             </div>
             <h2>Order Placed Successfully.</h2>
             <p>
-              Thank you for choosing Tuah. Your order has been received and is
+              Thank you for choosing Tuwa. Your order has been received and is
               pending confirmation. Our team will contact you to arrange payment
               and delivery.
             </p>

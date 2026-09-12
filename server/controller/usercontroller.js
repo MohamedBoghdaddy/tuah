@@ -22,7 +22,7 @@ dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const JWT_SECRET = process.env.JWT_SECRET || "tuah-demo-jwt-secret";
+const JWT_SECRET = process.env.JWT_SECRET || "tuwa-demo-jwt-secret";
 const isProduction = process.env.NODE_ENV === "production";
 const DEBUG_AUTH_TIMING = process.env.DEBUG_AUTH_TIMING === "true";
 const USER_ROLES = ["customer", "employee", "admin"];

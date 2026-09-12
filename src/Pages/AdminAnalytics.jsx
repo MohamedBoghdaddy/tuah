@@ -60,7 +60,7 @@ export default function AdminAnalytics() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `tuah-analytics-${Date.now()}.csv`;
+      a.download = `tuwa-analytics-${Date.now()}.csv`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {

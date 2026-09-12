@@ -1,4 +1,4 @@
-# Tuah Commerce — Production Readiness Report v2
+# Tuwa Commerce — Production Readiness Report v2
 **Date:** 2026-05-20  
 **Previous status:** STAGING READY  
 **This pass:** Fix all 4 remaining blockers + retest
@@ -120,7 +120,7 @@ GET /api/admin/emails/outbox
 5. Updated `leaveController.js` (getMyLeaveRequests, submitLeaveRequest, cancelLeaveRequest) to use `resolveEmployee`
 6. Created `linkUsersToEmployees.js` migration — ran against live DB, created 24 Employee stubs for all staff Users
 
-**Live test (`qa.employee@tuah.test`):**
+**Live test (`qa.employee@tuwa.test`):**
 ```
 Clock-in:         201 ✅  (status: "late", employeeId: 6a0de26c...)
 Own attendance:   200 ✅  (1 record found)
@@ -191,7 +191,7 @@ Customer correctly has no `employeeId` ✅
 
 ## 8. Attendance / Leave End-to-End (live)
 
-Full flow tested as `qa.employee@tuah.test`:
+Full flow tested as `qa.employee@tuwa.test`:
 
 | Step | Result |
 |------|--------|

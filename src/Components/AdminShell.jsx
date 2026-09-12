@@ -20,8 +20,8 @@ const ROLE_LABELS = {
   designer: "Designer", employee: "Employee",
 };
 
-const SIDEBAR_COLLAPSED_KEY = "tuahAdminSidebarCollapsed";
-const OPEN_GROUPS_KEY = "tuahAdminNavOpenGroups";
+const SIDEBAR_COLLAPSED_KEY = "tuwaAdminSidebarCollapsed";
+const OPEN_GROUPS_KEY = "tuwaAdminNavOpenGroups";
 
 /** Coming-soon (roadmap) nav items are only shown to admin/manager — see erpNav.js. */
 const showFullERPNav = (user) => isAdmin(user) || getRole(user) === "manager";
@@ -80,7 +80,7 @@ const NavItemLink = ({ item, groupLabel, onNavigate }) => {
   if (item.comingSoon) {
     return (
       <NavLink
-        to={comingSoonHref(groupLabel || "Tuah OS", item.label)}
+        to={comingSoonHref(groupLabel || "Tuwa OS", item.label)}
         onClick={onNavigate}
         className="admin-premium-nav-link coming-soon"
       >
@@ -287,7 +287,7 @@ export const AdminSidebar = ({ active = "Overview" }) => {
         </button>
 
         <div className="admin-premium-brand">
-          <h1>Tuah OS</h1>
+          <h1>Tuwa OS</h1>
           <p>{roleLabel} Console</p>
         </div>
 
@@ -295,7 +295,7 @@ export const AdminSidebar = ({ active = "Overview" }) => {
         <div className="admin-org-chip">
           <span className="material-symbols-outlined">storefront</span>
           <div>
-            <strong>Tuah Furniture</strong>
+            <strong>Tuwa Furniture</strong>
             <span>Main Branch</span>
           </div>
         </div>
@@ -315,7 +315,7 @@ export const AdminSidebar = ({ active = "Overview" }) => {
         >
           <span className="material-symbols-outlined">menu</span>
         </button>
-        <span className="admin-mobile-brand">Tuah OS</span>
+        <span className="admin-mobile-brand">Tuwa OS</span>
         <button
           type="button"
           className="admin-mobile-logout-btn"
@@ -346,7 +346,7 @@ export const AdminSidebar = ({ active = "Overview" }) => {
       >
         <div className="admin-drawer-header">
           <div className="admin-premium-brand" style={{ padding: "0 0 12px" }}>
-            <h1>Tuah OS</h1>
+            <h1>Tuwa OS</h1>
             <p>{roleLabel} Console</p>
           </div>
           <button
@@ -373,7 +373,7 @@ export const AdminSidebar = ({ active = "Overview" }) => {
 export const AdminFooter = () => (
   <footer className="admin-premium-footer">
     <div>
-      <p>&copy; 2025 Tuah Commerce OS. All rights reserved.</p>
+      <p>&copy; 2025 Tuwa Commerce OS. All rights reserved.</p>
       <nav aria-label="Admin footer links">
         <Link to="/privacy">Privacy Policy</Link>
         <Link to="/terms">Terms of Service</Link>
@@ -548,7 +548,7 @@ export const AdminShell = ({ active, title, subtitle, actions, breadcrumbs, chil
   const resolvedBreadcrumbs = useMemo(() => {
     if (breadcrumbs) return breadcrumbs;
     const context = findActiveNavContext(location.pathname, user);
-    const crumbs = [{ label: "Tuah OS", href: getDashboardRoute(user) }];
+    const crumbs = [{ label: "Tuwa OS", href: getDashboardRoute(user) }];
     if (context?.groupLabel) crumbs.push({ label: context.groupLabel });
     crumbs.push({ label: context?.itemLabel || title || active || "" });
     return crumbs;

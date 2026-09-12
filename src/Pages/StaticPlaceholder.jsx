@@ -17,7 +17,7 @@ const placeholderContent = {
   },
   sustainability: {
     title: "Sustainability",
-    message: "At Tuah, every material is sourced with environmental intent. Our sustainability charter and supplier standards are being published shortly.",
+    message: "At Tuwa, every material is sourced with environmental intent. Our sustainability charter and supplier standards are being published shortly.",
   },
 };
 
@@ -44,7 +44,7 @@ export default function StaticPlaceholder({ pageKey = "privacy" }) {
             marginBottom: 24,
           }}
         >
-          Tuah Commerce
+          Tuwa Commerce
         </p>
         <h1
           style={{

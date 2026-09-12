@@ -263,7 +263,7 @@ router.post("/admin/quotes", (req, res) => {
     id: `quote-${Date.now()}`,
     status: "draft",
     createdAt: new Date().toISOString(),
-    items: req.body.items || ["Custom Tuah scope"],
+    items: req.body.items || ["Custom Tuwa scope"],
     ...req.body,
     amount: Number(req.body.amount || 0),
   };

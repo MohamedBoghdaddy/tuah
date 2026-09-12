@@ -1,5 +1,5 @@
 /**
- * Tuah Inventory — Live Concurrency Test
+ * Tuwa Inventory — Live Concurrency Test
  * Usage: node server/scripts/testInventoryConcurrency.js [base_url]
  *
  * This is NOT a unit test — it requires a running server (npm run dev in
@@ -24,7 +24,7 @@
 const BASE = process.argv[2] || "http://localhost:4000";
 const KEEP = process.argv.includes("--keep");
 
-const ADMIN_EMAIL = process.env.INVENTORY_TEST_EMAIL || "qa.admin@tuah.test";
+const ADMIN_EMAIL = process.env.INVENTORY_TEST_EMAIL || "qa.admin@tuwa.test";
 const ADMIN_PASSWORD = process.env.INVENTORY_TEST_PASSWORD || "12345678";
 
 let passed = 0;
@@ -55,7 +55,7 @@ const api = async (method, path, body) => {
 };
 
 async function main() {
-  console.log(`\n🧪  Tuah Inventory Concurrency Test — ${BASE}\n${"─".repeat(60)}`);
+  console.log(`\n🧪  Tuwa Inventory Concurrency Test — ${BASE}\n${"─".repeat(60)}`);
 
   // ── Login ────────────────────────────────────────────────────────────
   const login = await fetch(`${BASE}/api/users/login`, {
@@ -65,7 +65,7 @@ async function main() {
   }).then((r) => r.json()).catch(() => null);
 
   token = login?.token;
-  check("Login as admin", Boolean(token), "check INVENTORY_TEST_EMAIL/PASSWORD and that qa.admin@tuah.test exists");
+  check("Login as admin", Boolean(token), "check INVENTORY_TEST_EMAIL/PASSWORD and that qa.admin@tuwa.test exists");
   if (!token) {
     console.log("\nCannot continue without a token. Aborting.");
     process.exitCode = 1;

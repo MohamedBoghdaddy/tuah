@@ -119,7 +119,7 @@ const ProductDetail = () => {
       <div className="pd-page">
         <div className="pd-inner">
           <div className="kitchen-state kitchen-state-error">{error || "Product not found."}</div>
-          <Link to="/collections" className="btn-tuah-primary">Back to Collections</Link>
+          <Link to="/collections" className="btn-tuwa-primary">Back to Collections</Link>
         </div>
       </div>
     );
@@ -132,7 +132,7 @@ const ProductDetail = () => {
   return (
     <div className="pd-page">
       <div className="pd-inner">
-        <nav className="tuah-breadcrumb">
+        <nav className="tuwa-breadcrumb">
           <Link to="/">Home</Link>
           <span className="sep material-symbols-outlined" style={{ fontSize: 14 }}>chevron_right</span>
           <Link to="/Kitchen">Kitchens</Link>
@@ -224,7 +224,7 @@ const ProductDetail = () => {
             </div>
 
             <button
-              className={`btn-tuah-primary pd-add-btn${addedToCart ? " added" : ""}`}
+              className={`btn-tuwa-primary pd-add-btn${addedToCart ? " added" : ""}`}
               type="button"
               onClick={handleAddToCart}
               disabled={!product.inStock}
@@ -300,7 +300,7 @@ const ProductDetail = () => {
           {activeTab === 2 && (
             <div className="pd-tab-content">
               <p className="pd-tab-body">
-                Tuah offers white-glove delivery and professional installation by our certified team.
+                Tuwa offers white-glove delivery and professional installation by our certified team.
                 Lead time is typically 8-12 weeks and includes placement, leveling, and finishing checks.
               </p>
             </div>
@@ -312,7 +312,7 @@ const ProductDetail = () => {
                 Customize dimensions, materials, finishes, and hardware. Request a custom design quote
                 to speak with our design team about bespoke configurations.
               </p>
-              <button className="btn-tuah-outline" type="button" onClick={() => navigate("/contact")} style={{ marginTop: 20 }}>
+              <button className="btn-tuwa-outline" type="button" onClick={() => navigate("/contact")} style={{ marginTop: 20 }}>
                 Request Custom Design
               </button>
             </div>
@@ -327,7 +327,7 @@ const ProductDetail = () => {
                 Curated essentials to complement your centerpiece.
               </p>
             </div>
-            <Link to="/products" className="btn-tuah-ghost">Shop All</Link>
+            <Link to="/products" className="btn-tuwa-ghost">Shop All</Link>
           </div>
           <div className="pd-related-grid">
             {related.length === 0 ? (

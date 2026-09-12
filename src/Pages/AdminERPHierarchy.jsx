@@ -244,7 +244,7 @@ export default function AdminERPHierarchy() {
               {/* Tree */}
               <div>
                 <div className="erp-tree">
-                  <div className="erp-tree-root-label">Organizational Chart — Tuah Commerce</div>
+                  <div className="erp-tree-root-label">Organizational Chart — Tuwa Commerce</div>
                   {hierarchy.map((root) => (
                     <TreeNode
                       key={root._id || root.id || root.fullName}

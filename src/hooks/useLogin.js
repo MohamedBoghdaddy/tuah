@@ -42,7 +42,7 @@ export const useLogin = () => {
       if (isLoading) return;
 
       const startedAt = performance.now();
-      if (DEBUG_AUTH_TIMING) console.time("tuah-login-submit");
+      if (DEBUG_AUTH_TIMING) console.time("tuwa-login-submit");
 
       setIsLoading(true);
       setErrorMessage("");
@@ -51,7 +51,7 @@ export const useLogin = () => {
       try {
         const normalizedEmail = email.trim().toLowerCase();
         const requestStartedAt = performance.now();
-        if (DEBUG_AUTH_TIMING) console.time("tuah-login-api");
+        if (DEBUG_AUTH_TIMING) console.time("tuwa-login-api");
 
         const response = await axios.post(
           `${API_URL}/api/users/login`,
@@ -64,8 +64,8 @@ export const useLogin = () => {
         );
 
         if (DEBUG_AUTH_TIMING) {
-          console.timeEnd("tuah-login-api");
-          console.info(`tuah-login-api-ms=${Math.round(performance.now() - requestStartedAt)}`);
+          console.timeEnd("tuwa-login-api");
+          console.info(`tuwa-login-api-ms=${Math.round(performance.now() - requestStartedAt)}`);
         }
 
         const { token, user } = response.data;
@@ -81,7 +81,7 @@ export const useLogin = () => {
         dispatch({ type: "LOGIN_SUCCESS", payload: user });
 
         if (DEBUG_AUTH_TIMING) {
-          console.info(`tuah-login-state-ms=${Math.round(performance.now() - stateStartedAt)}`);
+          console.info(`tuwa-login-state-ms=${Math.round(performance.now() - stateStartedAt)}`);
         }
 
         setSuccessMessage("Login successful");
@@ -92,8 +92,8 @@ export const useLogin = () => {
       } finally {
         setIsLoading(false);
         if (DEBUG_AUTH_TIMING) {
-          console.info(`tuah-login-total-ms=${Math.round(performance.now() - startedAt)}`);
-          console.timeEnd("tuah-login-submit");
+          console.info(`tuwa-login-total-ms=${Math.round(performance.now() - startedAt)}`);
+          console.timeEnd("tuwa-login-submit");
         }
       }
     },

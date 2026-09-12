@@ -24,13 +24,13 @@ const steps = [
 ];
 
 const StorytellingSection = () => (
-  <section className="tuah-how" aria-labelledby="how-heading">
-    <div className="tuah-home-container">
-      <h2 id="how-heading">How Tuah Works</h2>
-      <div className="tuah-how-grid">
+  <section className="tuwa-how" aria-labelledby="how-heading">
+    <div className="tuwa-home-container">
+      <h2 id="how-heading">How Tuwa Works</h2>
+      <div className="tuwa-how-grid">
         {steps.map((step) => (
-          <article className="tuah-how-step" key={step.title}>
-            <span className="tuah-how-icon" aria-hidden="true">
+          <article className="tuwa-how-step" key={step.title}>
+            <span className="tuwa-how-icon" aria-hidden="true">
               <span className="material-symbols-outlined">{step.icon}</span>
             </span>
             <h3>{step.title}</h3>

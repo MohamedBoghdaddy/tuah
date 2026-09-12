@@ -1,7 +1,7 @@
 services:
   # React (CRA) frontend, served as a static site
   - type: web
-    name: tuah
+    name: tuwa
     runtime: static
     buildCommand: CI=false npm install && CI=false npm run build
     staticPublishPath: ./build
@@ -17,7 +17,7 @@ services:
 
   # Express/Supabase backend API
   - type: web
-    name: tuah-backend
+    name: tuwa-backend
     runtime: node
     rootDir: server
     buildCommand: npm install
@@ -30,9 +30,9 @@ services:
       - key: SESSION_SECRET
         generateValue: true
       - key: FRONTEND_URL
-        value: https://tuah.onrender.com,https://tuah-cool.vercel.app
+        value: https://tuah.onrender.com,https://tuwa-cool.vercel.app
       - key: CORS_ORIGIN
-        value: https://tuah.onrender.com,https://tuah-cool.vercel.app
+        value: https://tuah.onrender.com,https://tuwa-cool.vercel.app
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_ANON_KEY
@@ -48,9 +48,9 @@ services:
       - key: SUPABASE_EMAIL_ATTACHMENTS_BUCKET
         value: email-attachments
       - key: EMAIL_FROM_NAME
-        value: Tuah Commerce
+        value: Tuwa Commerce
       - key: EMAIL_FROM_ADDRESS
-        value: noreply@tuahcommerce.com
+        value: noreply@tuwacommerce.com
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT

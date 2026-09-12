@@ -3,7 +3,7 @@ import { PublicCommerceShell } from "../Components/PublicCommerceShell";
 import { supportApi } from "../services/api";
 import "../Styles/commerce-premium.css";
 
-const TRADE_EMAIL = "trade@tuahcommerce.com"; // TODO: replace with the final public trade inbox.
+const TRADE_EMAIL = "trade@tuwacommerce.com"; // TODO: replace with the final public trade inbox.
 
 const businessTypes = [
   "Interior Designer",
@@ -174,7 +174,7 @@ const TradeProgram = () => {
       <main className="trade-page">
         <section className="trade-hero">
           <p className="support-kicker">For Professionals</p>
-          <h1>Tuah Trade Program</h1>
+          <h1>Tuwa Trade Program</h1>
           <p>
             For designers, architects, studios, and businesses furnishing projects at
             scale.

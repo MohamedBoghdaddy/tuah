@@ -147,7 +147,7 @@ const Checkout = () => {
             <span className="material-symbols-outlined">shopping_bag</span>
             <h3>Your cart is empty</h3>
             <p>Add an item before checkout.</p>
-            <button className="btn-tuah-primary" type="button" onClick={() => navigate("/collections")}>
+            <button className="btn-tuwa-primary" type="button" onClick={() => navigate("/collections")}>
               Shop Collections
             </button>
           </div>
@@ -184,7 +184,7 @@ const Checkout = () => {
                     <textarea id="notes" name="notes" value={form.notes} onChange={handleChange} placeholder="Access code, floor number..." rows={3} />
                   </CheckoutField>
                 </div>
-                <button className="btn-tuah-primary co-next-btn" type="button" onClick={continueToDelivery}>
+                <button className="btn-tuwa-primary co-next-btn" type="button" onClick={continueToDelivery}>
                   Continue to Delivery
                 </button>
               </section>
@@ -209,7 +209,7 @@ const Checkout = () => {
                     />
                     <div>
                       <p className="co-install-name">White-Glove Delivery</p>
-                      <p className="co-install-desc">Full assembly, room placement, and packaging removal by Tuah artisans.</p>
+                      <p className="co-install-desc">Full assembly, room placement, and packaging removal by Tuwa artisans.</p>
                     </div>
                     <span className="co-install-price">+$450</span>
                   </div>
@@ -231,7 +231,7 @@ const Checkout = () => {
                 </div>
                 <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
                   <button className="co-back-btn" type="button" onClick={() => setStep(1)}>Back</button>
-                  <button className="btn-tuah-primary co-next-btn" type="button" onClick={() => setStep(3)}>
+                  <button className="btn-tuwa-primary co-next-btn" type="button" onClick={() => setStep(3)}>
                     Continue to Payment
                   </button>
                 </div>
@@ -277,7 +277,7 @@ const Checkout = () => {
                 <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
                   <button className="co-back-btn" type="button" onClick={() => setStep(2)}>Back</button>
                   <button
-                    className="btn-tuah-primary co-next-btn"
+                    className="btn-tuwa-primary co-next-btn"
                     type="button"
                     onClick={handlePlaceOrder}
                     disabled={loading || items.length === 0}
@@ -332,13 +332,13 @@ const Checkout = () => {
             </div>
             <h2>Order Created</h2>
             <p>
-              Thank you for choosing Tuah. {createdOrder?.id ? `Order ${createdOrder.id} is now visible in Admin Orders.` : "Your order is now visible in Admin Orders."}
+              Thank you for choosing Tuwa. {createdOrder?.id ? `Order ${createdOrder.id} is now visible in Admin Orders.` : "Your order is now visible in Admin Orders."}
             </p>
             <div className="co-modal-actions">
-              <button className="btn-tuah-primary" type="button" onClick={() => navigate("/admin/orders")}>
+              <button className="btn-tuwa-primary" type="button" onClick={() => navigate("/admin/orders")}>
                 View Admin Orders
               </button>
-              <button className="btn-tuah-outline" type="button" onClick={() => navigate("/collections")}>
+              <button className="btn-tuwa-outline" type="button" onClick={() => navigate("/collections")}>
                 Return to Collections
               </button>
             </div>

@@ -6,7 +6,7 @@ export const DEFAULT_PRODUCT_IMAGE =
       <path d="M180 720h440l-44-252H224l-44 252Z" fill="#d8d0c5"/>
       <path d="M256 420h288l42 48H214l42-48Z" fill="#b7aa9d"/>
       <path d="M300 322h200v98H300z" fill="#c9beb2"/>
-      <text x="400" y="815" text-anchor="middle" font-family="Arial, sans-serif" font-size="38" fill="#645d58">Tuah Commerce</text>
+      <text x="400" y="815" text-anchor="middle" font-family="Arial, sans-serif" font-size="38" fill="#645d58">Tuwa Commerce</text>
     </svg>`
   );
 

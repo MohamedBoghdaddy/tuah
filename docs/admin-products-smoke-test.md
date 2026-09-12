@@ -61,8 +61,8 @@ node server/scripts/seed-admin.js
 ```
 
 Default credentials created:
-- Email: `admin@tuah.com`
-- Password: `TUAHAdmin2024!`
+- Email: `admin@tuwa.com`
+- Password: `TUWAAdmin2024!`
 
 **Change the password via MongoDB after first login.**
 
@@ -73,7 +73,7 @@ Default credentials created:
 ### Health check
 ```bash
 curl http://localhost:4000/
-# → {"message":"Tuah API is running in mongo mode",...}
+# → {"message":"Tuwa API is running in mongo mode",...}
 ```
 
 ### No token → 401
@@ -86,7 +86,7 @@ curl http://localhost:4000/api/admin/products
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:4000/api/users/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@tuah.com","password":"TUAHAdmin2024!"}' \
+  -d '{"email":"admin@tuwa.com","password":"TUWAAdmin2024!"}' \
   | jq -r .token)
 echo $TOKEN
 ```
@@ -171,7 +171,7 @@ curl -X POST http://localhost:4000/api/admin/products/<id>/image \
 - [ ] All required env vars set in Render dashboard
 - [ ] `MONGO_URI` uses Atlas allowlist for Render IPs (or 0.0.0.0/0)
 - [ ] `SUPABASE_SERVICE_ROLE_KEY` set and never committed to git
-- [ ] `FRONTEND_URL` = Netlify URL (e.g. `https://tuah.netlify.app`)
+- [ ] `FRONTEND_URL` = Netlify URL (e.g. `https://tuwa.netlify.app`)
 - [ ] `CORS_ORIGIN` = same Netlify URL
 - [ ] Start command: `node server/server.js` from `server/` directory
 - [ ] Health check path: `/`

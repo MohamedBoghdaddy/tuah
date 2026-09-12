@@ -4,7 +4,7 @@ import { PublicCommerceShell } from "../Components/PublicCommerceShell";
 import { supportApi } from "../services/api";
 import "../Styles/commerce-premium.css";
 
-const SUPPORT_EMAIL = "support@tuahcommerce.com"; // TODO: replace with the final public support inbox.
+const SUPPORT_EMAIL = "support@tuwacommerce.com"; // TODO: replace with the final public support inbox.
 const SHOWROOM_PHONE = "+34 932 155 000";
 const SHOWROOM_ADDRESS = "Carrer de Mallorca, 259, 08008 Barcelona, Spain";
 
@@ -100,7 +100,7 @@ const initialForm = {
 };
 
 const buildMailto = (form) => {
-  const subject = encodeURIComponent(`Tuah support request: ${form.type || "Support"}`);
+  const subject = encodeURIComponent(`Tuwa support request: ${form.type || "Support"}`);
   const body = encodeURIComponent(
     [
       `Name: ${form.name}`,
@@ -217,7 +217,7 @@ const SupportPortal = () => {
           <div className="support-form-card">
             <div className="support-section-header compact">
               <h2>Support Request</h2>
-              <p>Requests are saved to the Tuah backend when the API is available.</p>
+              <p>Requests are saved to the Tuwa backend when the API is available.</p>
             </div>
 
             <form className="support-form" onSubmit={handleSubmit} noValidate>

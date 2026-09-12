@@ -19,15 +19,15 @@ const PASS = "12345678";
 // ── Role accounts ─────────────────────────────────────────────────────────────
 const ROLES = [
   { label: "no_token",   email: null,                       password: null },
-  { label: "customer",   email: "qa.customer@tuah.test",    password: PASS },
-  { label: "employee",   email: "qa.employee@tuah.test",    password: PASS },
-  { label: "designer",   email: "qa.designer@tuah.test",    password: PASS },
-  { label: "operations", email: "qa.operations@tuah.test",  password: PASS },
-  { label: "accountant", email: "qa.accountant@tuah.test",  password: PASS },
-  { label: "HR",         email: "qa.hr@tuah.test",          password: PASS },
-  { label: "manager",    email: "qa.manager@tuah.test",     password: PASS },
-  { label: "admin",      email: "qa.admin@tuah.test",       password: PASS },
-  { label: "super_admin",email: "qa.superadmin@tuah.test",  password: PASS },
+  { label: "customer",   email: "qa.customer@tuwa.test",    password: PASS },
+  { label: "employee",   email: "qa.employee@tuwa.test",    password: PASS },
+  { label: "designer",   email: "qa.designer@tuwa.test",    password: PASS },
+  { label: "operations", email: "qa.operations@tuwa.test",  password: PASS },
+  { label: "accountant", email: "qa.accountant@tuwa.test",  password: PASS },
+  { label: "HR",         email: "qa.hr@tuwa.test",          password: PASS },
+  { label: "manager",    email: "qa.manager@tuwa.test",     password: PASS },
+  { label: "admin",      email: "qa.admin@tuwa.test",       password: PASS },
+  { label: "super_admin",email: "qa.superadmin@tuwa.test",  password: PASS },
 ];
 
 // ── Endpoints to test ─────────────────────────────────────────────────────────
@@ -158,7 +158,7 @@ const pass = (status, expected) => {
 // ── Main ──────────────────────────────────────────────────────────────────────
 const main = async () => {
   console.log("\n══════════════════════════════════════════════════════════════════");
-  console.log("  Tuah Commerce — API Auth Matrix Test");
+  console.log("  Tuwa Commerce — API Auth Matrix Test");
   console.log("══════════════════════════════════════════════════════════════════\n");
 
   // Login all roles

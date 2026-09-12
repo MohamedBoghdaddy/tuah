@@ -39,7 +39,7 @@ const getDisplayName = (user) =>
   [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() ||
   user?.name ||
   user?.username ||
-  "Tuah Member";
+  "Tuwa Member";
 
 const getInitials = (user) =>
   getDisplayName(user)
@@ -745,7 +745,7 @@ export default function CustomerDashboard() {
       <div className="customer-account-panel-list">
         {myOrders.map((order) => {
           const orderId = order._id || order.id;
-          const title = order.items?.map(i => i.name).join(", ") || "Tuah Order";
+          const title = order.items?.map(i => i.name).join(", ") || "Tuwa Order";
           const label = STATUS_LABEL[order.status] || order.status;
           const date = order.createdAt ? new Date(order.createdAt).toLocaleDateString() : "";
           return (
@@ -815,7 +815,7 @@ export default function CustomerDashboard() {
                       myOrders.filter(o => !["delivered","cancelled"].includes(o.status)).slice(0,3).map((order) => {
                         const orderId = order._id || order.id;
                         const thumb = order.items?.[0]?.imageUrl;
-                        const title = order.items?.map(i => i.name).join(", ") || "Tuah Order";
+                        const title = order.items?.map(i => i.name).join(", ") || "Tuwa Order";
                         const tone = STATUS_TONE[order.status] || "gold";
                         const label = STATUS_LABEL[order.status] || order.status;
                         return (

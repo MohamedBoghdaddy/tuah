@@ -117,8 +117,8 @@ const Wishlist = () => {
 
   const handleShare = async () => {
     const shareData = {
-      title: "My Tuah Commerce Wishlist",
-      text: "View my curated Tuah Commerce wishlist.",
+      title: "My Tuwa Commerce Wishlist",
+      text: "View my curated Tuwa Commerce wishlist.",
       url: window.location.href,
     };
 

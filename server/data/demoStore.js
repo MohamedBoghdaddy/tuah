@@ -20,7 +20,7 @@ export const orderDisplay = (order) => ({
   itemsSummary:
     order.itemsSummary ||
     (order.items || []).map((item) => item.name).join(", ") ||
-    "Custom Tuah order",
+    "Custom Tuwa order",
 });
 
 export const dashboardData = () => {

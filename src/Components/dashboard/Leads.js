@@ -10,7 +10,7 @@ const emptyQuote = {
   customerEmail: "",
   project: "",
   amount: "",
-  items: "Custom Tuah scope",
+  items: "Custom Tuwa scope",
 };
 
 const emptyLead = {
@@ -61,7 +61,7 @@ const Leads = () => {
       customerEmail: lead.email,
       project: lead.projectType || lead.project || "",
       amount: lead.estimatedValue || lead.budget || "",
-      items: "Custom Tuah scope",
+      items: "Custom Tuwa scope",
     });
   };
 
@@ -110,7 +110,7 @@ const Leads = () => {
         customerEmail: quoteForm.customerEmail,
         items: [
           {
-            name: quoteForm.items || "Custom Tuah scope",
+            name: quoteForm.items || "Custom Tuwa scope",
             quantity: 1,
             unitPrice: Number(quoteForm.amount || 0),
           },
@@ -133,7 +133,7 @@ const Leads = () => {
           <p className="admin-page-eyebrow">Leads</p>
           <h2>Lead Intake & Quote Builder</h2>
         </div>
-        <button className="btn-tuah-primary" type="button" onClick={() => navigate("/admin/quotes")}>
+        <button className="btn-tuwa-primary" type="button" onClick={() => navigate("/admin/quotes")}>
           <span className="material-symbols-outlined" style={{ fontSize: 16 }}>request_quote</span>
           View Quotes
         </button>
@@ -221,7 +221,7 @@ const Leads = () => {
                 <label htmlFor="leadValue">Estimated Value</label>
                 <input id="leadValue" type="number" min="0" value={leadForm.estimatedValue} onChange={(event) => setLeadForm((prev) => ({ ...prev, estimatedValue: event.target.value }))} />
               </div>
-              <button className="btn-tuah-primary admin-field-full" type="submit" disabled={submitting}>
+              <button className="btn-tuwa-primary admin-field-full" type="submit" disabled={submitting}>
                 Save Lead
               </button>
             </form>
@@ -267,7 +267,7 @@ const Leads = () => {
                 />
               </div>
               <div className="admin-actions admin-field-full">
-                <button className="btn-tuah-primary" type="submit" disabled={submitting}>
+                <button className="btn-tuwa-primary" type="submit" disabled={submitting}>
                   {submitting ? "Saving..." : "Create Quote"}
                 </button>
                 <button className="admin-ghost-btn" type="button" onClick={() => setQuoteForm(emptyQuote)}>

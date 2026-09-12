@@ -1,4 +1,4 @@
-# Tuah Commerce — Production Readiness Report
+# Tuwa Commerce — Production Readiness Report
 **Date:** 2026-05-20  
 **Tester:** Claude Code (automated + live browser)  
 **Backend:** localhost:4000 (Express/Mongo/Supabase)  
@@ -15,7 +15,7 @@
 | MongoDB | ✅ Connected | Atlas cloud |
 | Supabase Storage | ✅ Connected | Service role key present server-side |
 
-API root: `{"message":"Tuah API is running in mongo mode","mongo":{"available":true,"source":"MONGO_URI"}}`
+API root: `{"message":"Tuwa API is running in mongo mode","mongo":{"available":true,"source":"MONGO_URI"}}`
 
 ---
 
@@ -63,15 +63,15 @@ Email provider not configured — invites queue as `provider_not_configured`, UI
 
 | Role | Email | Password | Expected Landing |
 |------|-------|----------|-----------------|
-| super_admin | qa.superadmin@tuah.test | 12345678 | /admin/dashboard (full) |
-| admin | qa.admin@tuah.test | 12345678 | /admin/dashboard (full) |
-| manager | qa.manager@tuah.test | 12345678 | /admin/dashboard (limited) |
-| HR | qa.hr@tuah.test | 12345678 | /admin/dashboard (HR nav) |
-| accountant | qa.accountant@tuah.test | 12345678 | /admin/dashboard (finance) |
-| operations | qa.operations@tuah.test | 12345678 | /admin/dashboard (ops) |
-| designer | qa.designer@tuah.test | 12345678 | /admin/dashboard (minimal) |
-| employee | qa.employee@tuah.test | 12345678 | /admin/dashboard (self-service) |
-| customer | qa.customer@tuah.test | 12345678 | /dashboard (customer) |
+| super_admin | qa.superadmin@tuwa.test | 12345678 | /admin/dashboard (full) |
+| admin | qa.admin@tuwa.test | 12345678 | /admin/dashboard (full) |
+| manager | qa.manager@tuwa.test | 12345678 | /admin/dashboard (limited) |
+| HR | qa.hr@tuwa.test | 12345678 | /admin/dashboard (HR nav) |
+| accountant | qa.accountant@tuwa.test | 12345678 | /admin/dashboard (finance) |
+| operations | qa.operations@tuwa.test | 12345678 | /admin/dashboard (ops) |
+| designer | qa.designer@tuwa.test | 12345678 | /admin/dashboard (minimal) |
+| employee | qa.employee@tuwa.test | 12345678 | /admin/dashboard (self-service) |
+| customer | qa.customer@tuwa.test | 12345678 | /dashboard (customer) |
 
 ---
 

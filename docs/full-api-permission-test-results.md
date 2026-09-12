@@ -1,4 +1,4 @@
-# Tuah Commerce — Full API Permission Test Results
+# Tuwa Commerce — Full API Permission Test Results
 
 **Date:** 2026-05-20  
 **Test password for all QA accounts:** `12345678`

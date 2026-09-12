@@ -101,7 +101,7 @@ const Orders = () => {
               {icon === "filter_alt" ? "Status" : icon === "calendar_today" ? "Date" : "Collection"}
             </button>
           ))}
-          <button className="btn-tuah-primary" type="button" onClick={() => navigate("/admin/leads")}>
+          <button className="btn-tuwa-primary" type="button" onClick={() => navigate("/admin/leads")}>
             <span className="material-symbols-outlined" style={{ fontSize: 16 }}>add</span>
             Create Order
           </button>
@@ -237,7 +237,7 @@ const Orders = () => {
                   <span style={{ fontFamily: "var(--font-serif)", fontSize: 22, fontWeight: 400 }}>{selectedOrder.amountLabel}</span>
                 </div>
                 <button
-                  className="btn-tuah-primary"
+                  className="btn-tuwa-primary"
                   type="button"
                   style={{ width: "100%", marginBottom: 10, justifyContent: "center" }}
                   onClick={updateSelectedStatus}

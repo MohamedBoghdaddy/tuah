@@ -110,7 +110,7 @@ const Kitchen = () => {
   return (
     <div className="kitchen-page">
       <div className="kitchen-page-inner">
-        <nav className="tuah-breadcrumb">
+        <nav className="tuwa-breadcrumb">
           <Link to="/">Home</Link>
           <span className="sep material-symbols-outlined" style={{ fontSize: 14 }}>chevron_right</span>
           <Link to="/collections">Collections</Link>
@@ -228,7 +228,7 @@ const Kitchen = () => {
                 <span className="load-more-count">
                   Showing {Math.min(visibleCount, filtered.length)} of {filtered.length} items
                 </span>
-                <button className="btn-tuah-primary" type="button" onClick={() => setVisible((value) => value + 4)}>
+                <button className="btn-tuwa-primary" type="button" onClick={() => setVisible((value) => value + 4)}>
                   View More Collections
                 </button>
               </div>

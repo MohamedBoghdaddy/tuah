@@ -1,7 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif:wght@400;600;700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap");
 
-.tuah-home-page {
+.tuwa-home-page {
   min-height: 100vh;
   overflow-x: hidden;
   background: #fcf9f4;
@@ -9,12 +9,12 @@
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-.tuah-home-page .material-symbols-outlined,
-.tuah-home-nav .material-symbols-outlined {
+.tuwa-home-page .material-symbols-outlined,
+.tuwa-home-nav .material-symbols-outlined {
   font-variation-settings: "FILL" 0, "wght" 300, "GRAD" 0, "opsz" 24;
 }
 
-.tuah-home-container {
+.tuwa-home-container {
   width: min(1280px, calc(100% - 48px));
   margin: 0 auto;
 }
@@ -31,7 +31,7 @@
   border: 0;
 }
 
-.tuah-home-nav {
+.tuwa-home-nav {
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -41,7 +41,7 @@
   -webkit-backdrop-filter: blur(16px);
 }
 
-.tuah-home-nav-inner {
+.tuwa-home-nav-inner {
   width: min(1280px, calc(100% - 48px));
   height: 80px;
   margin: 0 auto;
@@ -51,7 +51,7 @@
   gap: 28px;
 }
 
-.tuah-home-brand {
+.tuwa-home-brand {
   flex: 0 0 auto;
   color: #131b2e;
   font-family: "Noto Serif", Georgia, serif;
@@ -61,7 +61,7 @@
   white-space: nowrap;
 }
 
-.tuah-home-links {
+.tuwa-home-links {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -69,7 +69,7 @@
   color: #645d58;
 }
 
-.tuah-home-links a {
+.tuwa-home-links a {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -82,12 +82,12 @@
   transition: color 180ms ease;
 }
 
-.tuah-home-links a:hover,
-.tuah-home-links a.active {
+.tuwa-home-links a:hover,
+.tuwa-home-links a.active {
   color: #000000;
 }
 
-.tuah-home-links a.active::after {
+.tuwa-home-links a.active::after {
   content: "";
   position: absolute;
   right: 0;
@@ -97,13 +97,13 @@
   background: #000000;
 }
 
-.tuah-home-dropdown {
+.tuwa-home-dropdown {
   position: relative;
   display: flex;
   align-items: center;
 }
 
-.tuah-home-dropdown::after {
+.tuwa-home-dropdown::after {
   content: "";
   position: absolute;
   top: 100%;
@@ -112,7 +112,7 @@
   height: 16px;
 }
 
-.tuah-home-dropdown-menu {
+.tuwa-home-dropdown-menu {
   position: absolute;
   top: calc(100% + 12px);
   left: 50%;
@@ -132,14 +132,14 @@
     transform 180ms ease;
 }
 
-.tuah-home-dropdown:hover .tuah-home-dropdown-menu,
-.tuah-home-dropdown.is-open .tuah-home-dropdown-menu {
+.tuwa-home-dropdown:hover .tuwa-home-dropdown-menu,
+.tuwa-home-dropdown.is-open .tuwa-home-dropdown-menu {
   opacity: 1;
   pointer-events: auto;
   transform: translate(-50%, 0);
 }
 
-.tuah-home-dropdown-menu a {
+.tuwa-home-dropdown-menu a {
   justify-content: flex-start;
   min-height: 38px;
   padding: 0 12px;
@@ -147,24 +147,24 @@
   font-size: 13px;
 }
 
-.tuah-home-dropdown-menu a.active::after {
+.tuwa-home-dropdown-menu a.active::after {
   display: none;
 }
 
-.tuah-home-dropdown-menu a:hover,
-.tuah-home-dropdown-menu a.active {
+.tuwa-home-dropdown-menu a:hover,
+.tuwa-home-dropdown-menu a.active {
   background: #f0ede8;
 }
 
-.tuah-home-actions {
+.tuwa-home-actions {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: 18px;
 }
 
-.tuah-home-icon-btn,
-.tuah-home-menu-btn {
+.tuwa-home-icon-btn,
+.tuwa-home-menu-btn {
   position: relative;
   width: 36px;
   height: 36px;
@@ -181,13 +181,13 @@
     background 180ms ease;
 }
 
-.tuah-home-icon-btn:hover,
-.tuah-home-menu-btn:hover {
+.tuwa-home-icon-btn:hover,
+.tuwa-home-menu-btn:hover {
   color: #a07e48;
   background: #f0ede8;
 }
 
-.tuah-home-cart-badge {
+.tuwa-home-cart-badge {
   position: absolute;
   top: 0;
   right: 0;
@@ -203,25 +203,25 @@
   font-weight: 700;
 }
 
-.tuah-home-menu-btn {
+.tuwa-home-menu-btn {
   display: none;
 }
 
-.tuah-home-menu-btn span {
+.tuwa-home-menu-btn span {
   width: 18px;
   height: 1px;
   display: block;
   background: currentColor;
 }
 
-.tuah-hero {
+.tuwa-hero {
   min-height: 840px;
   display: flex;
   align-items: center;
   background: #fcf9f4;
 }
 
-.tuah-hero-grid {
+.tuwa-hero-grid {
   display: grid;
   grid-template-columns: minmax(0, 0.94fr) minmax(0, 1.06fr);
   align-items: center;
@@ -229,9 +229,9 @@
   padding: 86px 0 92px;
 }
 
-.tuah-hero-copy span,
-.tuah-best-header span,
-.tuah-showroom-copy span {
+.tuwa-hero-copy span,
+.tuwa-best-header span,
+.tuwa-showroom-copy span {
   display: block;
   margin-bottom: 22px;
   color: #a07e48;
@@ -241,13 +241,13 @@
   text-transform: uppercase;
 }
 
-.tuah-hero-copy h1,
-.tuah-home-section-heading h2,
-.tuah-best-header h2,
-.tuah-how h2,
-.tuah-showroom-copy h2,
-.tuah-testimonials h2,
-.tuah-footer h2 {
+.tuwa-hero-copy h1,
+.tuwa-home-section-heading h2,
+.tuwa-best-header h2,
+.tuwa-how h2,
+.tuwa-showroom-copy h2,
+.tuwa-testimonials h2,
+.tuwa-footer h2 {
   margin: 0;
   color: #000000;
   font-family: "Noto Serif", Georgia, serif;
@@ -255,12 +255,12 @@
   line-height: 1.08;
 }
 
-.tuah-hero-copy h1 {
+.tuwa-hero-copy h1 {
   max-width: 680px;
   font-size: 72px;
 }
 
-.tuah-hero-copy p {
+.tuwa-hero-copy p {
   max-width: 580px;
   margin: 26px 0 0;
   color: #645d58;
@@ -268,16 +268,16 @@
   line-height: 1.72;
 }
 
-.tuah-hero-actions {
+.tuwa-hero-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
   margin-top: 34px;
 }
 
-.tuah-home-primary-btn,
-.tuah-home-outline-btn,
-.tuah-home-light-btn {
+.tuwa-home-primary-btn,
+.tuwa-home-outline-btn,
+.tuwa-home-light-btn {
   min-height: 56px;
   padding: 0 30px;
   display: inline-flex;
@@ -295,33 +295,33 @@
     border-color 180ms ease;
 }
 
-.tuah-home-primary-btn {
+.tuwa-home-primary-btn {
   color: #fcf9f4;
   background: #131b2e;
 }
 
-.tuah-home-outline-btn {
+.tuwa-home-outline-btn {
   color: #a07e48;
   border: 1px solid #a07e48;
   background: transparent;
 }
 
-.tuah-home-primary-btn:hover,
-.tuah-home-outline-btn:hover,
-.tuah-home-light-btn:hover {
+.tuwa-home-primary-btn:hover,
+.tuwa-home-outline-btn:hover,
+.tuwa-home-light-btn:hover {
   transform: translateY(-1px);
 }
 
-.tuah-home-outline-btn:hover {
+.tuwa-home-outline-btn:hover {
   background: #f0ede8;
 }
 
-.tuah-hero-image-wrap {
+.tuwa-hero-image-wrap {
   position: relative;
   min-height: 690px;
 }
 
-.tuah-hero-image-back {
+.tuwa-hero-image-back {
   position: absolute;
   inset: 26px 0 -10px 26px;
   background: #ebe8e3;
@@ -330,7 +330,7 @@
   box-shadow: 0 28px 70px rgba(19, 27, 46, 0.18);
 }
 
-.tuah-hero-image-wrap img {
+.tuwa-hero-image-wrap img {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -341,20 +341,20 @@
   box-shadow: 0 24px 70px rgba(19, 27, 46, 0.2);
 }
 
-.tuah-home-stats {
+.tuwa-home-stats {
   padding: 76px 0;
   color: #f6f3ee;
   background: #131b2e;
 }
 
-.tuah-home-stats-grid {
+.tuwa-home-stats-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 24px;
   text-align: center;
 }
 
-.tuah-home-stat strong {
+.tuwa-home-stat strong {
   display: block;
   color: #e8c184;
   font-family: "Noto Serif", Georgia, serif;
@@ -363,7 +363,7 @@
   line-height: 1.2;
 }
 
-.tuah-home-stat span {
+.tuwa-home-stat span {
   display: block;
   margin-top: 8px;
   color: rgba(246, 243, 238, 0.72);
@@ -372,24 +372,24 @@
   text-transform: uppercase;
 }
 
-.tuah-home-section {
+.tuwa-home-section {
   padding: 88px 0;
   background: #fcf9f4;
 }
 
-.tuah-home-section-heading {
+.tuwa-home-section-heading {
   margin-bottom: 46px;
 }
 
-.tuah-home-section-heading h2,
-.tuah-best-header h2,
-.tuah-how h2,
-.tuah-testimonials h2,
-.tuah-footer h2 {
+.tuwa-home-section-heading h2,
+.tuwa-best-header h2,
+.tuwa-how h2,
+.tuwa-testimonials h2,
+.tuwa-footer h2 {
   font-size: 42px;
 }
 
-.tuah-home-section-heading span {
+.tuwa-home-section-heading span {
   display: block;
   width: 96px;
   height: 1px;
@@ -397,7 +397,7 @@
   background: #a07e48;
 }
 
-.tuah-featured-grid {
+.tuwa-featured-grid {
   height: 740px;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -405,7 +405,7 @@
   gap: 20px;
 }
 
-.tuah-featured-card {
+.tuwa-featured-card {
   position: relative;
   overflow: hidden;
   display: block;
@@ -415,47 +415,47 @@
   text-decoration: none;
 }
 
-.tuah-featured-large {
+.tuwa-featured-large {
   grid-column: span 2;
   grid-row: span 2;
 }
 
-.tuah-featured-wide {
+.tuwa-featured-wide {
   grid-column: span 2;
 }
 
-.tuah-featured-card img {
+.tuwa-featured-card img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: transform 700ms ease;
 }
 
-.tuah-featured-card:hover img {
+.tuwa-featured-card:hover img {
   transform: scale(1.05);
 }
 
-.tuah-featured-shade {
+.tuwa-featured-shade {
   position: absolute;
   inset: 0;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.66), rgba(0, 0, 0, 0.04));
 }
 
-.tuah-featured-copy {
+.tuwa-featured-copy {
   position: absolute;
   right: 28px;
   bottom: 28px;
   left: 28px;
 }
 
-.tuah-featured-copy strong {
+.tuwa-featured-copy strong {
   display: block;
   font-family: "Noto Serif", Georgia, serif;
   font-size: 27px;
   font-weight: 400;
 }
 
-.tuah-featured-copy small {
+.tuwa-featured-copy small {
   display: block;
   max-width: 360px;
   margin-top: 6px;
@@ -464,13 +464,13 @@
   line-height: 1.5;
 }
 
-.tuah-best {
+.tuwa-best {
   padding: 88px 0;
   overflow: hidden;
   background: #f6f3ee;
 }
 
-.tuah-best-header {
+.tuwa-best-header {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
@@ -478,12 +478,12 @@
   margin-bottom: 44px;
 }
 
-.tuah-best-controls {
+.tuwa-best-controls {
   display: flex;
   gap: 14px;
 }
 
-.tuah-best-controls button {
+.tuwa-best-controls button {
   width: 48px;
   height: 48px;
   display: grid;
@@ -498,12 +498,12 @@
     border-color 180ms ease;
 }
 
-.tuah-best-controls button:hover {
+.tuwa-best-controls button:hover {
   background: #e8c184;
   border-color: #e8c184;
 }
 
-.tuah-best-scroll {
+.tuwa-best-scroll {
   width: min(1280px, calc(100% - 48px));
   margin: 0 auto;
   display: flex;
@@ -514,16 +514,16 @@
   padding-bottom: 8px;
 }
 
-.tuah-best-scroll::-webkit-scrollbar {
+.tuwa-best-scroll::-webkit-scrollbar {
   display: none;
 }
 
-.tuah-best-card {
+.tuwa-best-card {
   flex: 0 0 420px;
   scroll-snap-align: start;
 }
 
-.tuah-best-image {
+.tuwa-best-image {
   position: relative;
   aspect-ratio: 4 / 5;
   overflow: hidden;
@@ -532,18 +532,18 @@
   border-radius: 14px;
 }
 
-.tuah-best-image img {
+.tuwa-best-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: transform 500ms ease;
 }
 
-.tuah-best-card:hover .tuah-best-image img {
+.tuwa-best-card:hover .tuwa-best-image img {
   transform: scale(1.05);
 }
 
-.tuah-best-image button {
+.tuwa-best-image button {
   position: absolute;
   right: 18px;
   bottom: 18px;
@@ -565,17 +565,17 @@
     background 180ms ease;
 }
 
-.tuah-best-card:hover .tuah-best-image button,
-.tuah-best-image button:focus-visible {
+.tuwa-best-card:hover .tuwa-best-image button,
+.tuwa-best-image button:focus-visible {
   opacity: 1;
   transform: translateY(0);
 }
 
-.tuah-best-image button:hover {
+.tuwa-best-image button:hover {
   background: #e8c184;
 }
 
-.tuah-best-title {
+.tuwa-best-title {
   display: block;
   min-height: 64px;
   color: #1c1c19;
@@ -585,7 +585,7 @@
   text-decoration: none;
 }
 
-.tuah-best-card p {
+.tuwa-best-card p {
   margin: 4px 0 0;
   color: #645d58;
   font-size: 12px;
@@ -593,7 +593,7 @@
   text-transform: uppercase;
 }
 
-.tuah-best-card strong {
+.tuwa-best-card strong {
   display: block;
   margin-top: 10px;
   color: #a07e48;
@@ -601,7 +601,7 @@
   font-weight: 700;
 }
 
-.tuah-how {
+.tuwa-how {
   padding: 92px 0;
   text-align: center;
   background: #fcf9f4;
@@ -609,14 +609,14 @@
   border-bottom: 1px solid #ebe8e3;
 }
 
-.tuah-how-grid {
+.tuwa-how-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 30px;
   margin-top: 72px;
 }
 
-.tuah-how-icon {
+.tuwa-how-icon {
   width: 66px;
   height: 66px;
   margin: 0 auto 24px;
@@ -627,11 +627,11 @@
   border-radius: 999px;
 }
 
-.tuah-how-icon .material-symbols-outlined {
+.tuwa-how-icon .material-symbols-outlined {
   font-size: 31px;
 }
 
-.tuah-how-step h3 {
+.tuwa-how-step h3 {
   margin: 0;
   color: #1c1c19;
   font-family: "Noto Serif", Georgia, serif;
@@ -639,7 +639,7 @@
   font-weight: 400;
 }
 
-.tuah-how-step p {
+.tuwa-how-step p {
   max-width: 250px;
   margin: 14px auto 0;
   color: #645d58;
@@ -647,26 +647,26 @@
   line-height: 1.64;
 }
 
-.tuah-showroom {
+.tuwa-showroom {
   padding: 94px 0;
   overflow: hidden;
   color: #fcf9f4;
   background: #131b2e;
 }
 
-.tuah-showroom-grid {
+.tuwa-showroom-grid {
   display: grid;
   grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
   align-items: center;
   gap: 70px;
 }
 
-.tuah-showroom-copy h2 {
+.tuwa-showroom-copy h2 {
   color: #fcf9f4;
   font-size: 56px;
 }
 
-.tuah-showroom-copy p {
+.tuwa-showroom-copy p {
   max-width: 570px;
   margin: 26px 0 0;
   color: #bec6e0;
@@ -674,22 +674,22 @@
   line-height: 1.72;
 }
 
-.tuah-home-light-btn {
+.tuwa-home-light-btn {
   margin-top: 34px;
   color: #131b2e;
   background: #fcf9f4;
 }
 
-.tuah-home-light-btn:hover {
+.tuwa-home-light-btn:hover {
   background: #e8c184;
 }
 
-.tuah-showroom-image {
+.tuwa-showroom-image {
   position: relative;
   min-height: 440px;
 }
 
-.tuah-showroom-image > span {
+.tuwa-showroom-image > span {
   position: absolute;
   inset: -18px;
   background: rgba(232, 193, 132, 0.16);
@@ -697,7 +697,7 @@
   filter: blur(52px);
 }
 
-.tuah-showroom-image img {
+.tuwa-showroom-image img {
   position: relative;
   width: 100%;
   height: 100%;
@@ -708,11 +708,11 @@
   box-shadow: 0 30px 90px rgba(0, 0, 0, 0.34);
 }
 
-.tuah-testimonials {
+.tuwa-testimonials {
   text-align: center;
 }
 
-.tuah-testimonial-grid {
+.tuwa-testimonial-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px;
@@ -720,7 +720,7 @@
   text-align: left;
 }
 
-.tuah-testimonial-card {
+.tuwa-testimonial-card {
   min-height: 330px;
   padding: 42px;
   display: flex;
@@ -729,19 +729,19 @@
   border-radius: 14px;
 }
 
-.tuah-testimonial-stars {
+.tuwa-testimonial-stars {
   display: flex;
   gap: 2px;
   color: #a07e48;
   margin-bottom: 26px;
 }
 
-.tuah-testimonial-stars .material-symbols-outlined {
+.tuwa-testimonial-stars .material-symbols-outlined {
   font-variation-settings: "FILL" 1, "wght" 300, "GRAD" 0, "opsz" 24;
   font-size: 20px;
 }
 
-.tuah-testimonial-card p {
+.tuwa-testimonial-card p {
   margin: 0;
   color: #1c1c19;
   font-size: 16px;
@@ -749,7 +749,7 @@
   line-height: 1.72;
 }
 
-.tuah-testimonial-person {
+.tuwa-testimonial-person {
   display: flex;
   align-items: center;
   gap: 15px;
@@ -757,7 +757,7 @@
   padding-top: 28px;
 }
 
-.tuah-testimonial-person > span {
+.tuwa-testimonial-person > span {
   width: 42px;
   height: 42px;
   flex: 0 0 auto;
@@ -767,31 +767,31 @@
   border-radius: 999px;
 }
 
-.tuah-testimonial-person strong,
-.tuah-testimonial-person small {
+.tuwa-testimonial-person strong,
+.tuwa-testimonial-person small {
   display: block;
 }
 
-.tuah-testimonial-person strong {
+.tuwa-testimonial-person strong {
   color: #000000;
   font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
 }
 
-.tuah-testimonial-person small {
+.tuwa-testimonial-person small {
   margin-top: 2px;
   color: #645d58;
   font-size: 12px;
 }
 
-.tuah-footer {
+.tuwa-footer {
   padding: 56px 0 42px;
   background: #f6f3ee;
   border-top: 1px solid #c6c6cd;
 }
 
-.tuah-footer-newsletter {
+.tuwa-footer-newsletter {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(360px, 0.9fr);
   align-items: end;
@@ -799,7 +799,7 @@
   padding-bottom: 46px;
 }
 
-.tuah-footer-newsletter p {
+.tuwa-footer-newsletter p {
   max-width: 460px;
   margin: 16px 0 0;
   color: #645d58;
@@ -807,7 +807,7 @@
   line-height: 1.64;
 }
 
-.tuah-footer-newsletter form {
+.tuwa-footer-newsletter form {
   display: flex;
   align-items: flex-end;
   gap: 16px;
@@ -815,7 +815,7 @@
   padding-bottom: 8px;
 }
 
-.tuah-footer-newsletter input {
+.tuwa-footer-newsletter input {
   flex: 1;
   min-width: 0;
   padding: 12px 0;
@@ -826,7 +826,7 @@
   font-size: 16px;
 }
 
-.tuah-footer-newsletter button {
+.tuwa-footer-newsletter button {
   padding: 12px 0;
   color: #000000;
   background: transparent;
@@ -837,11 +837,11 @@
   text-transform: uppercase;
 }
 
-.tuah-footer-newsletter button:hover {
+.tuwa-footer-newsletter button:hover {
   color: #a07e48;
 }
 
-.tuah-footer-bottom {
+.tuwa-footer-bottom {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -850,14 +850,14 @@
   border-top: 1px solid #c6c6cd;
 }
 
-.tuah-footer-bottom nav {
+.tuwa-footer-bottom nav {
   display: flex;
   flex-wrap: wrap;
   gap: 22px;
 }
 
-.tuah-footer-bottom a,
-.tuah-footer-bottom p {
+.tuwa-footer-bottom a,
+.tuwa-footer-bottom p {
   margin: 0;
   color: #645d58;
   font-size: 12px;
@@ -866,51 +866,51 @@
   text-decoration: none;
 }
 
-.tuah-footer-bottom a:hover {
+.tuwa-footer-bottom a:hover {
   color: #000000;
 }
 
 @media (max-width: 1120px) {
-  .tuah-hero-grid,
-  .tuah-showroom-grid {
+  .tuwa-hero-grid,
+  .tuwa-showroom-grid {
     grid-template-columns: 1fr;
     gap: 56px;
   }
 
-  .tuah-hero {
+  .tuwa-hero {
     min-height: auto;
   }
 
-  .tuah-hero-image-wrap {
+  .tuwa-hero-image-wrap {
     min-height: 560px;
   }
 
-  .tuah-featured-grid {
+  .tuwa-featured-grid {
     height: 660px;
   }
 
-  .tuah-how-grid,
-  .tuah-testimonial-grid {
+  .tuwa-how-grid,
+  .tuwa-testimonial-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 820px) {
-  .tuah-home-container,
-  .tuah-home-nav-inner,
-  .tuah-best-scroll {
+  .tuwa-home-container,
+  .tuwa-home-nav-inner,
+  .tuwa-best-scroll {
     width: min(100% - 36px, 1280px);
   }
 
-  .tuah-home-nav-inner {
+  .tuwa-home-nav-inner {
     gap: 14px;
   }
 
-  .tuah-home-brand {
+  .tuwa-home-brand {
     font-size: 18px;
   }
 
-  .tuah-home-links {
+  .tuwa-home-links {
     position: fixed;
     top: 80px;
     right: 0;
@@ -925,28 +925,28 @@
     box-shadow: 0 18px 40px rgba(19, 27, 46, 0.12);
   }
 
-  .tuah-home-links.is-open {
+  .tuwa-home-links.is-open {
     display: flex;
   }
 
-  .tuah-home-links a,
-  .tuah-home-dropdown {
+  .tuwa-home-links a,
+  .tuwa-home-dropdown {
     width: 100%;
   }
 
-  .tuah-home-links a {
+  .tuwa-home-links a {
     min-height: 44px;
   }
 
-  .tuah-home-dropdown {
+  .tuwa-home-dropdown {
     display: block;
   }
 
-  .tuah-home-dropdown::after {
+  .tuwa-home-dropdown::after {
     display: none;
   }
 
-  .tuah-home-dropdown-menu {
+  .tuwa-home-dropdown-menu {
     position: static;
     width: 100%;
     min-width: 0;
@@ -959,124 +959,124 @@
     box-shadow: none;
   }
 
-  .tuah-home-menu-btn {
+  .tuwa-home-menu-btn {
     display: inline-grid;
   }
 
-  .tuah-home-actions {
+  .tuwa-home-actions {
     gap: 8px;
   }
 
-  .tuah-hero-grid {
+  .tuwa-hero-grid {
     padding: 58px 0 64px;
   }
 
-  .tuah-hero-copy h1 {
+  .tuwa-hero-copy h1 {
     font-size: 44px;
   }
 
-  .tuah-hero-copy p,
-  .tuah-showroom-copy p {
+  .tuwa-hero-copy p,
+  .tuwa-showroom-copy p {
     font-size: 16px;
   }
 
-  .tuah-hero-image-wrap {
+  .tuwa-hero-image-wrap {
     min-height: 460px;
   }
 
-  .tuah-home-stats-grid {
+  .tuwa-home-stats-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .tuah-featured-grid {
+  .tuwa-featured-grid {
     height: auto;
     grid-template-columns: 1fr;
     grid-template-rows: none;
   }
 
-  .tuah-featured-card,
-  .tuah-featured-large,
-  .tuah-featured-wide {
+  .tuwa-featured-card,
+  .tuwa-featured-large,
+  .tuwa-featured-wide {
     grid-column: auto;
     grid-row: auto;
     min-height: 280px;
   }
 
-  .tuah-best-header {
+  .tuwa-best-header {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .tuah-best-card {
+  .tuwa-best-card {
     flex-basis: 310px;
   }
 
-  .tuah-how-grid,
-  .tuah-testimonial-grid,
-  .tuah-footer-newsletter {
+  .tuwa-how-grid,
+  .tuwa-testimonial-grid,
+  .tuwa-footer-newsletter {
     grid-template-columns: 1fr;
   }
 
-  .tuah-showroom-copy h2,
-  .tuah-home-section-heading h2,
-  .tuah-best-header h2,
-  .tuah-how h2,
-  .tuah-testimonials h2,
-  .tuah-footer h2 {
+  .tuwa-showroom-copy h2,
+  .tuwa-home-section-heading h2,
+  .tuwa-best-header h2,
+  .tuwa-how h2,
+  .tuwa-testimonials h2,
+  .tuwa-footer h2 {
     font-size: 34px;
   }
 
-  .tuah-showroom-image,
-  .tuah-showroom-image img {
+  .tuwa-showroom-image,
+  .tuwa-showroom-image img {
     min-height: 340px;
   }
 
-  .tuah-testimonial-card {
+  .tuwa-testimonial-card {
     padding: 30px;
   }
 
-  .tuah-footer-bottom {
+  .tuwa-footer-bottom {
     align-items: flex-start;
     flex-direction: column;
   }
 }
 
 @media (max-width: 520px) {
-  .tuah-home-nav-inner {
+  .tuwa-home-nav-inner {
     width: min(100% - 24px, 1280px);
   }
 
-  .tuah-home-brand {
+  .tuwa-home-brand {
     max-width: 130px;
     white-space: normal;
     line-height: 1.1;
   }
 
-  .tuah-hero-copy h1 {
+  .tuwa-hero-copy h1 {
     font-size: 38px;
   }
 
-  .tuah-hero-actions,
-  .tuah-footer-newsletter form {
+  .tuwa-hero-actions,
+  .tuwa-footer-newsletter form {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .tuah-home-primary-btn,
-  .tuah-home-outline-btn,
-  .tuah-home-light-btn {
+  .tuwa-home-primary-btn,
+  .tuwa-home-outline-btn,
+  .tuwa-home-light-btn {
     width: 100%;
   }
 
-  .tuah-hero-image-wrap {
+  .tuwa-hero-image-wrap {
     min-height: 360px;
   }
 
-  .tuah-home-stat strong {
+  .tuwa-home-stat strong {
     font-size: 32px;
   }
 
-  .tuah-best-card {
+  .tuwa-best-card {
     flex-basis: 286px;
   }
 }

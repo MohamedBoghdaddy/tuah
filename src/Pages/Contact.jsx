@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { PublicCommerceShell } from "../Components/PublicCommerceShell";
-import catalogPdf from "../Assets/collection/TUAH-Company Profile-2024 Q01.pdf";
+import catalogPdf from "../Assets/collection/TUWA-Company Profile-2024 Q01.pdf";
 import { supportApi } from "../services/api";
 import "../Styles/commerce-premium.css";
 
@@ -14,7 +14,7 @@ const showroomImage =
 const mapImage =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuATlgo0_32EtW6LwofAuS4kIq_gskGIkNAc39XsSOWFM1O3saq40XNgeJ5RBvK_MjJakXdeuXeJUwyVZAlJU7jKBOjLx_i0HIEoJpXVKCnj_iF2n8JxH3gwOpgXKOOx8w3JZlkT3tw-frUPWxTsJYqPmwRMV4gQUSolLJUSvIFFQeUpuQ8hEyFDs1zCrcMDpmi-SeGleGB-llApEGSJZzHwVTGmEdPwOCnivadKuqVu8BTwoJ3Ir2pPGhP5C07WR06qgRbGL5q04RB7";
 
-const SUPPORT_EMAIL = "support@tuahcommerce.com"; // TODO: replace with the final public support inbox.
+const SUPPORT_EMAIL = "support@tuwacommerce.com"; // TODO: replace with the final public support inbox.
 
 const topicToSupportType = {
   "Product Inquiry": "Product Inquiry",
@@ -25,7 +25,7 @@ const topicToSupportType = {
 };
 
 const buildContactMailto = ({ name, email, topic, message }) => {
-  const subject = encodeURIComponent(`Tuah inquiry: ${topic || "Contact"}`);
+  const subject = encodeURIComponent(`Tuwa inquiry: ${topic || "Contact"}`);
   const body = encodeURIComponent(
     [`Name: ${name}`, `Email: ${email}`, `Topic: ${topic}`, "", message].join("\n"),
   );

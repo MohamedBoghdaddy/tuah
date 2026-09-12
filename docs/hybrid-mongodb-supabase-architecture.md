@@ -1,6 +1,6 @@
-# Tuah Architecture: Supabase Postgres
+# Tuwa Architecture: Supabase Postgres
 
-Tuah Commerce runs entirely on Supabase Postgres. MongoDB, previously the
+Tuwa Commerce runs entirely on Supabase Postgres. MongoDB, previously the
 business source of truth, was fully retired in an 8-phase migration (see
 `server/supabase/migrations/0001` through `0009` for the schema history and
 `server/scripts/migrate*ToSupabase.js` for the one-time data backfills that

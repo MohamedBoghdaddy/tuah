@@ -30,7 +30,7 @@ export default function AcceptInvite() {
       setMessage("Your invitation has been received. Please log in with the credentials provided by your administrator.");
     } else {
       setStatus("ready");
-      setMessage("Welcome to Tuah Commerce. If you received an invitation email, please click the link in that email to proceed.");
+      setMessage("Welcome to Tuwa Commerce. If you received an invitation email, please click the link in that email to proceed.");
     }
   }, [employeeId]);
 
@@ -45,7 +45,7 @@ export default function AcceptInvite() {
       }}>
         {/* Logo */}
         <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: "0.12em", marginBottom: 32, color: "#1c1c19" }}>
-          TUAH
+          TUWA
         </div>
 
         {/* Icon */}
@@ -69,7 +69,7 @@ export default function AcceptInvite() {
             <p style={{ fontSize: 13, color: "#166534", margin: 0 }}>
               <strong>Next steps:</strong><br />
               1. Set your password when prompted.<br />
-              2. Log in to Tuah Commerce.<br />
+              2. Log in to Tuwa Commerce.<br />
               3. Your administrator will assign you to your workspace.
             </p>
           </div>
@@ -98,7 +98,7 @@ export default function AcceptInvite() {
         </Link>
 
         <p style={{ marginTop: 24, fontSize: 13, color: "#94a3b8" }}>
-          Need help? Contact your Tuah Commerce administrator.
+          Need help? Contact your Tuwa Commerce administrator.
         </p>
       </div>
 

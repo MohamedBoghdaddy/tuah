@@ -61,13 +61,13 @@ const Slideshow = () => {
   };
 
   return (
-    <section className="tuah-best" aria-labelledby="best-sellers-heading">
-      <div className="tuah-home-container tuah-best-header">
+    <section className="tuwa-best" aria-labelledby="best-sellers-heading">
+      <div className="tuwa-home-container tuwa-best-header">
         <div>
           <span>Iconic Pieces</span>
           <h2 id="best-sellers-heading">Best Sellers</h2>
         </div>
-        <div className="tuah-best-controls">
+        <div className="tuwa-best-controls">
           <button type="button" onClick={() => scrollBy(-1)} aria-label="Previous best sellers">
             <span className="material-symbols-outlined">chevron_left</span>
           </button>
@@ -77,10 +77,10 @@ const Slideshow = () => {
         </div>
       </div>
 
-      <div className="tuah-best-scroll" ref={scrollRef}>
+      <div className="tuwa-best-scroll" ref={scrollRef}>
         {bestSellers.map((product) => (
-          <article className="tuah-best-card" key={product.id}>
-            <div className="tuah-best-image">
+          <article className="tuwa-best-card" key={product.id}>
+            <div className="tuwa-best-image">
               <Link to={`/products/${product.slug}`} aria-label={`View ${product.name}`}>
                 <img src={product.image} alt={product.name} />
               </Link>
@@ -92,7 +92,7 @@ const Slideshow = () => {
                 <span className="material-symbols-outlined">add_shopping_cart</span>
               </button>
             </div>
-            <Link to={`/products/${product.slug}`} className="tuah-best-title">
+            <Link to={`/products/${product.slug}`} className="tuwa-best-title">
               {product.name}
             </Link>
             <p>{product.material}</p>

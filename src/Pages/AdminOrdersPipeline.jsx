@@ -190,7 +190,7 @@ function OrderCard({ order, selected, onSelect }) {
   const customer = resolveCustomer(order);
   const assignee = resolveAssignee(order);
   const itemsSummary = order.items?.map((i) => i.name).join(", ") ||
-    order.desc || "Tuah Commerce Order";
+    order.desc || "Tuwa Commerce Order";
 
   return (
     <button

@@ -83,7 +83,7 @@ const sendViaSendGrid = async (outboxRow) => {
     },
     body: JSON.stringify({
       personalizations: [{ to: [{ email: outboxRow.to_email, name: outboxRow.to_name || "" }] }],
-      from: { email: process.env.EMAIL_FROM_ADDRESS || "noreply@tuahcommerce.com" },
+      from: { email: process.env.EMAIL_FROM_ADDRESS || "noreply@tuwacommerce.com" },
       subject: outboxRow.subject,
       content: [
         ...(outboxRow.body_html
